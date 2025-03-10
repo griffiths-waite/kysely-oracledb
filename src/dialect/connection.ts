@@ -51,8 +51,36 @@ export class OracleConnection implements DatabaseConnection {
         });
     }
 
-    streamQuery<R>(_compiledQuery: CompiledQuery): AsyncIterableIterator<QueryResult<R>> {
-        throw new Error("Not implemented");
+    async *streamQuery<R>(compiledQuery: CompiledQuery, chunkSize: number = 1): AsyncIterableIterator<QueryResult<R>> {
+        if (!Number.isInteger(chunkSize) || chunkSize <= 0) {
+            throw new Error('chunkSize must be a positive integer')
+        }
+        const { sql, bindParams } = this.formatQuery(compiledQuery);
+        this.#log.debug({ sql: this.formatQueryForLogging(compiledQuery) }, "Executing query");
+        const result = await this.#connection.execute<R>(sql, bindParams, {
+            outFormat: oracledb.OUT_FORMAT_OBJECT,
+            fetchTypeHandler: (metaData) => {
+                metaData.name = metaData.name.toLowerCase();
+                return undefined;
+            },
+            ...this.#executeOptions,
+            resultSet: true,
+        });
+        const stream = result.resultSet!.toQueryStream()
+        let rows: R[] = []
+
+        for await (const row of stream) {
+            rows.push(row)
+            if (rows.length >= chunkSize) {
+                yield {
+                    rows
+                }
+                rows = []
+            }
+        }
+        yield {
+            rows
+        }
     }
 
     get identifier(): string {
