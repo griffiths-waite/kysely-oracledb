@@ -59,7 +59,7 @@ export class OracleIntrospector implements DatabaseIntrospector {
                     eb("username", "in", this.#config?.generator?.schemas ?? [null]),
                 ]),
             )
-            .fetch(999) // Oracle has a limit of 999 parameters for the IN clause
+            .where("rownum", "<", 999) // Oracle has a limit of 999 parameters for the IN clause
             .execute();
         return rawSchemas.map((schema) => ({ name: schema.username }));
     }
@@ -77,7 +77,7 @@ export class OracleIntrospector implements DatabaseIntrospector {
                     eb("tableName", "in", this.#config?.generator?.tables ?? [null]),
                 ]),
             )
-            .fetch(999) // Oracle has a limit of 999 parameters for the IN clause
+            .where("rownum", "<", 999) // Oracle has a limit of 999 parameters for the IN clause
             .execute();
         const hasDualTable = rawTables.some(
             (table) => table.owner === dualTable.owner && table.tableName === dualTable.tableName,
@@ -122,7 +122,7 @@ export class OracleIntrospector implements DatabaseIntrospector {
                     eb("viewName", "in", this.#config?.generator?.views ?? [null]),
                 ]),
             )
-            .fetch(999) // Oracle has a limit of 999 parameters for the IN clause
+            .where("rownum", "<", 999) // Oracle has a limit of 999 parameters for the IN clause
             .execute();
         const rawColumns = await this.#db
             .selectFrom("allTabColumns")
