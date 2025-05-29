@@ -1,5 +1,11 @@
 # kysely-oracledb
 
+## 2.0.4
+
+### Patch Changes
+
+- c8b7896: fixed package json exports
+
 ## 2.0.3
 
 ### Patch Changes
