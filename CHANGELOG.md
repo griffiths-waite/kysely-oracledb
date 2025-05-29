@@ -1,5 +1,11 @@
 # kysely-oracledb
 
+## 2.0.3
+
+### Patch Changes
+
+- 4b4ba1f: added generator option to retain underscores before leading digits when converting to camel case
+
 ## 2.0.2
 
 ### Patch Changes
