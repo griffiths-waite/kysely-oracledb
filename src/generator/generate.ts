@@ -35,10 +35,14 @@ export const generateFieldTypes = (fields: ColumnMetadata[], useCamelCase = fals
     return fieldStrings.join("\n");
 };
 
-export const generateTableTypes = (tables: TableMetadata[], useCamelCase = false): TableTypes[] => {
+export const generateTableTypes = (
+    tables: TableMetadata[],
+    useCamelCase = false,
+    underscoreLeadingDigits = false,
+): TableTypes[] => {
     return tables.map((table) => {
-        const originalTableName = useCamelCase ? camelCase(table.name) : table.name;
-        const pascalCaseTable = pascalCase(table.name);
+        const originalTableName = useCamelCase ? camelCase(table.name, underscoreLeadingDigits) : table.name;
+        const pascalCaseTable = pascalCase(table.name, underscoreLeadingDigits);
         const tableString = `interface ${pascalCaseTable}Table {\n${generateFieldTypes(table.columns, useCamelCase)}\n}`;
         const selectString = `export type ${pascalCaseTable} = Selectable<${pascalCaseTable}Table>`;
         const insertString = `export type New${pascalCaseTable} = Insertable<${pascalCaseTable}Table>`;
@@ -128,7 +132,11 @@ export const generate = async (config: OracleDialectConfig) => {
 
         const hasGeneratedField = tables.some((table) => table.columns.some((column) => column.isAutoIncrementing));
 
-        const tableTypes = generateTableTypes(tables, config.generator?.camelCase);
+        const tableTypes = generateTableTypes(
+            tables,
+            config.generator?.camelCase,
+            config.generator?.underscoreLeadingDigits,
+        );
         const databaseTypes = generateDatabaseTypes(tableTypes, hasGeneratedField);
 
         const formattedTypes = await formatTypes(databaseTypes, config?.generator?.prettierOptions);
