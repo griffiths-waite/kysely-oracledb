@@ -1,5 +1,11 @@
 # kysely-oracledb
 
+## 2.0.6
+
+### Patch Changes
+
+- a84b7a7: pass config option for underscore leading digits to field generation
+
 ## 2.0.5
 
 ### Patch Changes
