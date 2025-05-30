@@ -1,5 +1,11 @@
 # kysely-oracledb
 
+## 2.0.5
+
+### Patch Changes
+
+- a7c355b: updated generator option for retaining underscores to table fields
+
 ## 2.0.4
 
 ### Patch Changes
