@@ -115,6 +115,23 @@ describe("generateFieldTypes", () => {
             ]),
         ).toThrowError("Unsupported data type: UNSUPPORTED");
     });
+    it("should generate type string for underscored camel case field", () => {
+        expect(
+            generateFieldTypes(
+                [
+                    {
+                        name: "first_2nd_third",
+                        dataType: "VARCHAR2",
+                        isNullable: false,
+                        hasDefaultValue: false,
+                        isAutoIncrementing: false,
+                    },
+                ],
+                true,
+                true,
+            ),
+        ).toBe("'first_2ndThird': string");
+    });
 });
 
 describe("generate table types", () => {
@@ -300,6 +317,55 @@ describe("generate table types", () => {
                     "export type NewUserProfile = Insertable<UserProfileTable>" +
                     "\n" +
                     "export type UserProfileUpdate = Updateable<UserProfileTable>",
+            },
+        ]);
+    });
+    it("should generate table types for underscored camel case table", () => {
+        expect(
+            generateTableTypes(
+                [
+                    {
+                        name: "user_1test_profile",
+                        isView: false,
+                        columns: [
+                            {
+                                name: "id",
+                                dataType: "NUMBER",
+                                isNullable: false,
+                                hasDefaultValue: false,
+                                isAutoIncrementing: true,
+                            },
+                            {
+                                name: "name",
+                                dataType: "VARCHAR2",
+                                isNullable: false,
+                                hasDefaultValue: false,
+                                isAutoIncrementing: false,
+                            },
+                        ],
+                    },
+                ],
+                true,
+                true,
+            ),
+        ).toEqual([
+            {
+                table: "user_1testProfile",
+                tableTypeName: "User_1testProfile",
+                types:
+                    "interface User_1testProfileTable {" +
+                    "\n" +
+                    "'id': Generated<number>" +
+                    "\n" +
+                    "'name': string" +
+                    "\n" +
+                    "}" +
+                    "\n" +
+                    "export type User_1testProfile = Selectable<User_1testProfileTable>" +
+                    "\n" +
+                    "export type NewUser_1testProfile = Insertable<User_1testProfileTable>" +
+                    "\n" +
+                    "export type User_1testProfileUpdate = Updateable<User_1testProfileTable>",
             },
         ]);
     });
