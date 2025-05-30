@@ -47,7 +47,7 @@ export const generateTableTypes = (
     return tables.map((table) => {
         const originalTableName = useCamelCase ? camelCase(table.name, underscoreLeadingDigits) : table.name;
         const pascalCaseTable = pascalCase(table.name, underscoreLeadingDigits);
-        const tableString = `interface ${pascalCaseTable}Table {\n${generateFieldTypes(table.columns, useCamelCase)}\n}`;
+        const tableString = `interface ${pascalCaseTable}Table {\n${generateFieldTypes(table.columns, useCamelCase, underscoreLeadingDigits)}\n}`;
         const selectString = `export type ${pascalCaseTable} = Selectable<${pascalCaseTable}Table>`;
         const insertString = `export type New${pascalCaseTable} = Insertable<${pascalCaseTable}Table>`;
         const updateString = `export type ${pascalCaseTable}Update = Updateable<${pascalCaseTable}Table>`;
