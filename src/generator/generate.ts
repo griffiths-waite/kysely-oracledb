@@ -19,7 +19,11 @@ const kyselyImport = `import type { Generated, Insertable, Selectable, Updateabl
 const kyselyImportNoGen = `import type { Insertable, Selectable, Updateable } from 'kysely'`;
 const generationComment = (date: string) => `// Timestamp: ${date}`;
 
-export const generateFieldTypes = (fields: ColumnMetadata[], useCamelCase = false): string => {
+export const generateFieldTypes = (
+    fields: ColumnMetadata[],
+    useCamelCase = false,
+    underscoreLeadingDigits = false,
+): string => {
     const fieldStrings = fields.map((field) => {
         const type = typeMap[field.dataType];
         if (!type) {
@@ -30,7 +34,7 @@ export const generateFieldTypes = (fields: ColumnMetadata[], useCamelCase = fals
             types.push("null");
         }
         const typesString = field.isAutoIncrementing ? `Generated<${types.join(" | ")}>` : types.join(" | ");
-        return `${useCamelCase ? `'${camelCase(field.name)}'` : `'${field.name}'`}: ${typesString}`;
+        return `${useCamelCase ? `'${camelCase(field.name, underscoreLeadingDigits)}'` : `'${field.name}'`}: ${typesString}`;
     });
     return fieldStrings.join("\n");
 };
