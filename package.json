@@ -1,6 +1,6 @@
 {
     "name": "kysely-oracledb",
-    "version": "2.0.6",
+    "version": "2.0.7",
     "description": "Kysely Dialect and Type Generator for Oracle DB.",
     "author": "Griffiths Waite",
     "license": "MIT",
