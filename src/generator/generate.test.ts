@@ -369,6 +369,43 @@ describe("generate table types", () => {
             },
         ]);
     });
+    it("should generate table types for system table", () => {
+        expect(
+            generateTableTypes([
+                {
+                    name: "dual",
+                    isView: false,
+                    schema: "SYS",
+                    columns: [
+                        {
+                            name: "dummy",
+                            dataType: "VARCHAR2",
+                            isNullable: false,
+                            hasDefaultValue: false,
+                            isAutoIncrementing: false,
+                        },
+                    ],
+                },
+            ]),
+        ).toEqual([
+            {
+                table: "'sys.dual'",
+                tableTypeName: "Dual",
+                types:
+                    "interface DualTable {" +
+                    "\n" +
+                    "'dummy': string" +
+                    "\n" +
+                    "}" +
+                    "\n" +
+                    "export type Dual = Selectable<DualTable>" +
+                    "\n" +
+                    "export type NewDual = Insertable<DualTable>" +
+                    "\n" +
+                    "export type DualUpdate = Updateable<DualTable>",
+            },
+        ]);
+    });
 });
 
 describe("generateDatabaseTypes", () => {

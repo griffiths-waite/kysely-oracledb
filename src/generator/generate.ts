@@ -52,7 +52,7 @@ export const generateTableTypes = (
         const insertString = `export type New${pascalCaseTable} = Insertable<${pascalCaseTable}Table>`;
         const updateString = `export type ${pascalCaseTable}Update = Updateable<${pascalCaseTable}Table>`;
         return {
-            table: originalTableName,
+            table: table.schema === "SYS" ? "'sys." + originalTableName + "'" : originalTableName,
             tableTypeName: pascalCaseTable,
             types: `${tableString}\n${selectString}\n${insertString}\n${updateString}`,
         };
