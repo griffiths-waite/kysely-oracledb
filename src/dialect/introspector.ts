@@ -132,7 +132,7 @@ export class OracleIntrospector implements DatabaseIntrospector {
         const schemas = (await this.getSchemas()).map((it) => it.name);
         const rawViews = await this.#db
             .selectFrom("all_views")
-            .select(["owner", "view_name as viewName"])
+            .select(["owner", "view_name"])
             .where("owner", "in", schemas)
             .where((eb) =>
                 eb.or([
@@ -144,33 +144,25 @@ export class OracleIntrospector implements DatabaseIntrospector {
             .execute();
         const rawColumns = await this.#db
             .selectFrom("all_tab_columns")
-            .select([
-                "owner",
-                "table_name as tableName",
-                "column_name as columnName",
-                "data_type as dataType",
-                "nullable",
-                "data_default as dataDefault",
-                "identity_column as identityColumn",
-            ])
+            .select(["owner", "table_name", "column_name", "data_type", "nullable", "data_default", "identity_column"])
             .where("owner", "in", schemas)
             .where(
                 "table_name",
                 "in",
-                rawViews.map((view) => view.viewName),
+                rawViews.map((view) => view.view_name),
             )
             .execute();
         const views = rawViews.map((view) => {
             const columns = rawColumns
-                .filter((col) => col.owner === view.owner && col.tableName === view.viewName)
+                .filter((col) => col.owner === view.owner && col.table_name === view.view_name)
                 .map((col) => ({
-                    name: col.columnName,
-                    dataType: col.dataType,
+                    name: col.column_name,
+                    dataType: col.data_type,
                     isNullable: col.nullable === "Y",
-                    hasDefaultValue: col.dataDefault !== null,
-                    isAutoIncrementing: col.identityColumn === "YES",
+                    hasDefaultValue: col.data_default !== null,
+                    isAutoIncrementing: col.identity_column === "YES",
                 }));
-            const viewName = view.owner === "SYS" ? view.viewName.replace("_$", "$") : view.viewName;
+            const viewName = view.owner === "SYS" ? view.view_name.replace("_$", "$") : view.view_name;
             return { schema: view.owner, name: viewName, isView: true, columns };
         });
         return views;
