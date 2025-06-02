@@ -1,5 +1,5 @@
 import fs from "fs";
-import { CamelCasePlugin, ColumnMetadata, Kysely, TableMetadata } from "kysely";
+import { ColumnMetadata, Kysely, TableMetadata } from "kysely";
 import path from "path";
 import { format, Options } from "prettier";
 import { OracleDialect, OracleDialectConfig } from "../dialect/dialect.js";
@@ -115,7 +115,7 @@ export const generate = async (config: OracleDialectConfig) => {
     const type = config.generator?.type ?? "tables";
     try {
         const dialect = new OracleDialect(config);
-        const db = new Kysely<IntropsectorDB>({ dialect, plugins: [new CamelCasePlugin()] });
+        const db = new Kysely<IntropsectorDB>({ dialect });
         const introspector = dialect.createIntrospector(db);
 
         let tables: TableMetadata[];
