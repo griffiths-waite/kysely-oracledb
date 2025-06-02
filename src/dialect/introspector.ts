@@ -69,10 +69,10 @@ export class OracleIntrospector implements DatabaseIntrospector {
 
     async getTables(_options?: DatabaseMetadataOptions): Promise<TableMetadata[]> {
         const schemas = (await this.getSchemas()).map((it) => it.name);
-        const dualTable = { owner: "SYS", tableName: "DUAL" };
+        const dualTable = { owner: "SYS", table_name: "DUAL" };
         const rawTables = await this.#db
             .selectFrom("all_tables")
-            .select(["owner", "table_name as tableName"])
+            .select(["owner", "table_name"])
             .where("owner", "in", schemas)
             .where((eb) =>
                 eb.or([
@@ -83,7 +83,7 @@ export class OracleIntrospector implements DatabaseIntrospector {
             .fetch(999) // Oracle has a limit of 999 parameters for the IN clause
             .execute();
         const hasDualTable = rawTables.some(
-            (table) => table.owner === dualTable.owner && table.tableName === dualTable.tableName,
+            (table) => table.owner === dualTable.owner && table.table_name === dualTable.table_name,
         );
         if (!hasDualTable) {
             rawTables.push(dualTable);
@@ -92,37 +92,38 @@ export class OracleIntrospector implements DatabaseIntrospector {
             .selectFrom("all_tab_columns")
             .select([
                 "owner",
-                "table_name as tableName",
-                "column_name as columnName",
-                "data_type as dataType",
-                "data_length as dataLength",
-                "data_precision as dataPrecision",
-                "data_scale as dataScale",
+                "table_name",
+                "column_name",
+                "data_type",
+                "data_length",
+                "data_precision",
+                "data_scale",
                 "nullable",
-                "data_default as dataDefault",
-                "identity_column as identityColumn",
+                "data_default",
+                "identity_column",
             ])
             .where("owner", "in", [...schemas, dualTable.owner])
             .where(
                 "table_name",
                 "in",
-                rawTables.map((table) => table.tableName),
+                rawTables.map((table) => table.table_name),
             )
             .execute();
         const tables = rawTables.map((table) => {
             const columns = rawColumns
-                .filter((col) => col.owner === table.owner && col.tableName === table.tableName)
+                .filter((col) => col.owner === table.owner && col.table_name === table.table_name)
                 .map((col) => ({
-                    name: col.columnName,
-                    dataType: col.dataType,
-                    dataLength: col.dataLength,
-                    dataPrecision: col.dataPrecision,
-                    dataScale: col.dataScale,
+                    name: col.column_name,
+                    dataType: col.data_type,
+                    dataLength: col.data_length,
+                    dataPrecision: col.data_precision,
+                    dataScale: col.data_scale,
                     isNullable: col.nullable === "Y",
-                    hasDefaultValue: col.dataDefault !== null,
-                    isAutoIncrementing: col.identityColumn === "YES",
+                    hasDefaultValue: col.data_default !== null,
+                    isAutoIncrementing: col.identity_column === "YES",
                 }));
-            return { schema: table.owner, name: table.tableName, isView: false, columns };
+
+            return { schema: table.owner, name: table.table_name, isView: false, columns };
         });
         return tables;
     }
