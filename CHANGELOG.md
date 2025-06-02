@@ -1,5 +1,11 @@
 # kysely-oracledb
 
+## 2.0.8
+
+### Patch Changes
+
+- b0506e1: updated internal introspector data types to use snake case to allow custom introspection
+
 ## 2.0.7
 
 ### Patch Changes
