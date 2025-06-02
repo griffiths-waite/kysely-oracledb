@@ -15,32 +15,32 @@ export interface AllUsersTable {
 
 export interface AllTablesTable {
     owner: string;
-    tableName: string;
+    table_name: string;
 }
 
 export interface AllViewsTable {
     owner: string;
-    viewName: string;
+    view_name: string;
 }
 
 export interface AllTabColumnsTable {
     owner: string;
-    tableName: string;
-    columnName: string;
-    dataType: string;
-    dataLength: number | null;
-    dataPrecision: number | null;
-    dataScale: number | null;
+    table_name: string;
+    column_name: string;
+    data_type: string;
+    data_length: number | null;
+    data_precision: number | null;
+    data_scale: number | null;
     nullable: string;
-    dataDefault: string | null;
-    identityColumn: string;
+    data_default: string | null;
+    identity_column: string;
 }
 
 export interface IntropsectorDB {
-    allUsers: Selectable<AllUsersTable>;
-    allTables: Selectable<AllTablesTable>;
-    allViews: Selectable<AllViewsTable>;
-    allTabColumns: Selectable<AllTabColumnsTable>;
+    all_users: Selectable<AllUsersTable>;
+    all_tables: Selectable<AllTablesTable>;
+    all_views: Selectable<AllViewsTable>;
+    all_tab_columns: Selectable<AllTabColumnsTable>;
 }
 
 export class OracleIntrospector implements DatabaseIntrospector {
@@ -54,7 +54,7 @@ export class OracleIntrospector implements DatabaseIntrospector {
 
     async getSchemas(): Promise<SchemaMetadata[]> {
         const rawSchemas = await this.#db
-            .selectFrom("allUsers")
+            .selectFrom("all_users")
             .select("username")
             .where((eb) =>
                 eb.or([
@@ -71,13 +71,13 @@ export class OracleIntrospector implements DatabaseIntrospector {
         const schemas = (await this.getSchemas()).map((it) => it.name);
         const dualTable = { owner: "SYS", tableName: "DUAL" };
         const rawTables = await this.#db
-            .selectFrom("allTables")
-            .select(["owner", "tableName"])
+            .selectFrom("all_tables")
+            .select(["owner", "table_name as tableName"])
             .where("owner", "in", schemas)
             .where((eb) =>
                 eb.or([
                     eb(eb.val(this.#config?.generator?.tables?.length ?? 0), "=", eb.val(0)),
-                    eb("tableName", "in", this.#config?.generator?.tables ?? [null]),
+                    eb("table_name", "in", this.#config?.generator?.tables ?? [null]),
                 ]),
             )
             .fetch(999) // Oracle has a limit of 999 parameters for the IN clause
@@ -89,22 +89,22 @@ export class OracleIntrospector implements DatabaseIntrospector {
             rawTables.push(dualTable);
         }
         const rawColumns = await this.#db
-            .selectFrom("allTabColumns")
+            .selectFrom("all_tab_columns")
             .select([
                 "owner",
-                "tableName",
-                "columnName",
-                "dataType",
-                "dataLength",
-                "dataPrecision",
-                "dataScale",
+                "table_name as tableName",
+                "column_name as columnName",
+                "data_type as dataType",
+                "data_length as dataLength",
+                "data_precision as dataPrecision",
+                "data_scale as dataScale",
                 "nullable",
-                "dataDefault",
-                "identityColumn",
+                "data_default as dataDefault",
+                "identity_column as identityColumn",
             ])
             .where("owner", "in", [...schemas, dualTable.owner])
             .where(
-                "tableName",
+                "table_name",
                 "in",
                 rawTables.map((table) => table.tableName),
             )
@@ -130,23 +130,31 @@ export class OracleIntrospector implements DatabaseIntrospector {
     async getViews(_options?: DatabaseMetadataOptions): Promise<TableMetadata[]> {
         const schemas = (await this.getSchemas()).map((it) => it.name);
         const rawViews = await this.#db
-            .selectFrom("allViews")
-            .select(["owner", "viewName"])
+            .selectFrom("all_views")
+            .select(["owner", "view_name as viewName"])
             .where("owner", "in", schemas)
             .where((eb) =>
                 eb.or([
                     eb(eb.val(this.#config?.generator?.views?.length ?? 0), "=", eb.val(0)),
-                    eb("viewName", "in", this.#config?.generator?.views ?? [null]),
+                    eb("view_name", "in", this.#config?.generator?.views ?? [null]),
                 ]),
             )
             .fetch(999) // Oracle has a limit of 999 parameters for the IN clause
             .execute();
         const rawColumns = await this.#db
-            .selectFrom("allTabColumns")
-            .select(["owner", "tableName", "columnName", "dataType", "nullable", "dataDefault", "identityColumn"])
+            .selectFrom("all_tab_columns")
+            .select([
+                "owner",
+                "table_name as tableName",
+                "column_name as columnName",
+                "data_type as dataType",
+                "nullable",
+                "data_default as dataDefault",
+                "identity_column as identityColumn",
+            ])
             .where("owner", "in", schemas)
             .where(
-                "tableName",
+                "table_name",
                 "in",
                 rawViews.map((view) => view.viewName),
             )
