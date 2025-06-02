@@ -57,7 +57,7 @@ describe("OracleIntrospector", () => {
                 rows: [
                     {
                         owner: "SYS",
-                        tableName: "DUAL",
+                        table_name: "DUAL",
                     },
                 ],
                 rowsAffected: 0,
@@ -66,15 +66,15 @@ describe("OracleIntrospector", () => {
                 rows: [
                     {
                         owner: "SYS",
-                        tableName: "DUAL",
-                        columnName: "DUMMY",
-                        dataType: "VARCHAR2",
-                        dataLength: 1,
-                        dataPrecision: null,
-                        dataScale: null,
+                        table_name: "DUAL",
+                        column_name: "DUMMY",
+                        data_type: "VARCHAR2",
+                        data_length: 1,
+                        data_precision: null,
+                        data_scale: null,
                         nullable: "Y",
-                        dataDefault: null,
-                        identityColumn: null,
+                        data_default: null,
+                        identity_column: null,
                     },
                 ],
                 rowsAffected: 0,
@@ -105,13 +105,13 @@ describe("OracleIntrospector", () => {
         );
         expect(mockedExecute).toHaveBeenNthCalledWith(
             2,
-            "select owner, table_name tableName from all_tables where owner in (:0) and (:1 = :2 or table_name in (:3)) fetch next :4 rows only",
+            "select owner, table_name from all_tables where owner in (:0) and (:1 = :2 or table_name in (:3)) fetch next :4 rows only",
             ["SYS", 0, 0, null, 999],
             expect.anything(),
         );
         expect(mockedExecute).toHaveBeenNthCalledWith(
             3,
-            "select owner, table_name tableName, column_name columnName, data_type dataType, data_length dataLength, data_precision dataPrecision, data_scale dataScale, nullable, data_default dataDefault, identity_column identityColumn from all_tab_columns where owner in (:0, :1) and table_name in (:2)",
+            "select owner, table_name, column_name, data_type, data_length, data_precision, data_scale, nullable, data_default, identity_column from all_tab_columns where owner in (:0, :1) and table_name in (:2)",
             ["SYS", "SYS", "DUAL"],
             expect.anything(),
         );
@@ -151,7 +151,7 @@ describe("OracleIntrospector", () => {
                 rows: [
                     {
                         owner: "SYS",
-                        viewName: "DUAL",
+                        view_name: "DUAL",
                     },
                 ],
                 rowsAffected: 0,
@@ -160,12 +160,12 @@ describe("OracleIntrospector", () => {
                 rows: [
                     {
                         owner: "SYS",
-                        tableName: "DUAL",
-                        columnName: "DUMMY",
-                        dataType: "VARCHAR2",
+                        table_name: "DUAL",
+                        column_name: "DUMMY",
+                        data_type: "VARCHAR2",
                         nullable: "Y",
-                        dataDefault: null,
-                        identityColumn: null,
+                        data_default: null,
+                        identity_column: null,
                     },
                 ],
                 rowsAffected: 0,
@@ -196,13 +196,13 @@ describe("OracleIntrospector", () => {
         );
         expect(mockedExecute).toHaveBeenNthCalledWith(
             2,
-            "select owner, view_name viewName from all_views where owner in (:0) and (:1 = :2 or view_name in (:3)) fetch next :4 rows only",
+            "select owner, view_name from all_views where owner in (:0) and (:1 = :2 or view_name in (:3)) fetch next :4 rows only",
             ["SYS", 0, 0, null, 999],
             expect.anything(),
         );
         expect(mockedExecute).toHaveBeenNthCalledWith(
             3,
-            "select owner, table_name tableName, column_name columnName, data_type dataType, nullable, data_default dataDefault, identity_column identityColumn from all_tab_columns where owner in (:0) and table_name in (:1)",
+            "select owner, table_name, column_name, data_type, nullable, data_default, identity_column from all_tab_columns where owner in (:0) and table_name in (:1)",
             ["SYS", "DUAL"],
             expect.anything(),
         );
