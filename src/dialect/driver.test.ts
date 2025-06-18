@@ -1,3 +1,4 @@
+import { type QueryCompiler, DefaultQueryCompiler } from "kysely";
 import oracledb from "oracledb";
 import { describe, expect, it, vi } from "vitest";
 import { OracleDialect } from "./dialect";
@@ -90,10 +91,11 @@ describe("OracleDriver", () => {
         });
         const driver = dialect.createDriver();
         const connection = await driver.acquireConnection();
-        const spy = vi.spyOn(connection.connection, "execute").mockResolvedValue(undefined);
-        const dummyCompile = (() => {}) as any;
+        const spy = vi.spyOn(connection, "executeQuery").mockResolvedValue(undefined);
+        const dummyCompile: QueryCompiler["compileQuery"] = (node, queryId) =>
+            new DefaultQueryCompiler().compileQuery(node, queryId);
         await driver.savepoint(connection, "sp1", dummyCompile);
-        expect(spy).toHaveBeenCalledWith("SAVEPOINT sp1");
+        expect(spy).toHaveBeenCalledWith(expect.objectContaining({ sql: 'SAVEPOINT "sp1"' }));
         spy.mockRestore();
     });
 
@@ -105,10 +107,11 @@ describe("OracleDriver", () => {
         });
         const driver = dialect.createDriver();
         const connection = await driver.acquireConnection();
-        const spy = vi.spyOn(connection.connection, "execute").mockResolvedValue(undefined);
-        const dummyCompile = (() => {}) as any;
+        const spy = vi.spyOn(connection, "executeQuery").mockResolvedValue(undefined);
+        const dummyCompile: QueryCompiler["compileQuery"] = (node, queryId) =>
+            new DefaultQueryCompiler().compileQuery(node, queryId);
         await driver.rollbackToSavepoint(connection, "sp1", dummyCompile);
-        expect(spy).toHaveBeenCalledWith("ROLLBACK TO SAVEPOINT sp1");
+        expect(spy).toHaveBeenCalledWith(expect.objectContaining({ sql: 'ROLLBACK TO SAVEPOINT "sp1"' }));
         spy.mockRestore();
     });
 
@@ -120,10 +123,11 @@ describe("OracleDriver", () => {
         });
         const driver = dialect.createDriver();
         const connection = await driver.acquireConnection();
-        const spy = vi.spyOn(connection.connection, "execute").mockResolvedValue(undefined);
-        const dummyCompile = (() => {}) as any;
+        const spy = vi.spyOn(connection, "executeQuery").mockResolvedValue(undefined);
+        const dummyCompile: QueryCompiler["compileQuery"] = (node, queryId) =>
+            new DefaultQueryCompiler().compileQuery(node, queryId);
         await driver.releaseSavepoint(connection, "sp1", dummyCompile);
-        expect(spy).toHaveBeenCalledWith("RELEASE SAVEPOINT sp1");
+        expect(spy).toHaveBeenCalledWith(expect.objectContaining({ sql: 'RELEASE SAVEPOINT "sp1"' }));
         spy.mockRestore();
     });
 });

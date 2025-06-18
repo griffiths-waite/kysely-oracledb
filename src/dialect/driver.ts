@@ -1,6 +1,6 @@
 import { createQueryId, Driver, QueryCompiler } from "kysely";
-import { parseSavepointCommand } from "kysely/dist/cjs/parser/savepoint-parser.js";
 import { Connection } from "oracledb";
+import { parseSavepointCommand } from "../parser/savepoint-parser.js";
 import { OracleConnection } from "./connection.js";
 import { OracleDialectConfig } from "./dialect.js";
 import { defaultLogger, Logger } from "./logger.js";
