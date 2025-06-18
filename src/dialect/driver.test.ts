@@ -1,5 +1,5 @@
 import oracledb from "oracledb";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { OracleDialect } from "./dialect";
 
 describe("OracleDriver", () => {
@@ -81,5 +81,49 @@ describe("OracleDriver", () => {
         await driver.rollbackTransaction(connection);
 
         expect(connection.connection.rollback).toHaveBeenCalled();
+    });
+    it("call the connection execute method with correct SQL when creating a savepoint", async () => {
+        const dialect = new OracleDialect({
+            pool: await oracledb.createPool({
+                user: process.env.DB_USER,
+            }),
+        });
+        const driver = dialect.createDriver();
+        const connection = await driver.acquireConnection();
+        const spy = vi.spyOn(connection.connection, "execute").mockResolvedValue({});
+        const dummyCompile = (() => {}) as any;
+        await driver.savepoint(connection, "sp1", dummyCompile);
+        expect(spy).toHaveBeenCalledWith("SAVEPOINT sp1");
+        spy.mockRestore();
+    });
+
+    it("call the connection execute method with correct SQL when rolling back to a savepoint", async () => {
+        const dialect = new OracleDialect({
+            pool: await oracledb.createPool({
+                user: process.env.DB_USER,
+            }),
+        });
+        const driver = dialect.createDriver();
+        const connection = await driver.acquireConnection();
+        const spy = vi.spyOn(connection.connection, "execute").mockResolvedValue({});
+        const dummyCompile = (() => {}) as any;
+        await driver.rollbackToSavepoint(connection, "sp1", dummyCompile);
+        expect(spy).toHaveBeenCalledWith("ROLLBACK TO SAVEPOINT sp1");
+        spy.mockRestore();
+    });
+
+    it("call the connection execute method with correct SQL when releasing a savepoint", async () => {
+        const dialect = new OracleDialect({
+            pool: await oracledb.createPool({
+                user: process.env.DB_USER,
+            }),
+        });
+        const driver = dialect.createDriver();
+        const connection = await driver.acquireConnection();
+        const spy = vi.spyOn(connection.connection, "execute").mockResolvedValue({});
+        const dummyCompile = (() => {}) as any;
+        await driver.releaseSavepoint(connection, "sp1", dummyCompile);
+        expect(spy).toHaveBeenCalledWith("RELEASE SAVEPOINT sp1");
+        spy.mockRestore();
     });
 });

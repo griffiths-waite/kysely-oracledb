@@ -1,4 +1,4 @@
-import { Driver } from "kysely";
+import { Driver, QueryCompiler } from "kysely";
 import { Connection } from "oracledb";
 import { OracleConnection } from "./connection.js";
 import { OracleDialectConfig } from "./dialect.js";
@@ -40,6 +40,36 @@ export class OracleDriver implements Driver {
     async rollbackTransaction(connection: OracleConnection): Promise<void> {
         await connection.connection.rollback();
         this.#log.debug({ id: connection.identifier }, "Transaction rolled back");
+    }
+
+    async savepoint(
+        connection: OracleConnection,
+        savepoint: string,
+        compileQuery: QueryCompiler["compileQuery"],
+    ): Promise<void> {
+        this.#log.debug({ id: connection.identifier, savepoint }, "Creating savepoint");
+        await connection.connection.execute(`SAVEPOINT ${savepoint}`);
+        this.#log.debug({ id: connection.identifier, savepoint }, "Savepoint created");
+    }
+
+    async rollbackToSavepoint(
+        connection: OracleConnection,
+        savepoint: string,
+        compileQuery: QueryCompiler["compileQuery"],
+    ): Promise<void> {
+        this.#log.debug({ id: connection.identifier, savepoint }, "Rolling back to savepoint");
+        await connection.connection.execute(`ROLLBACK TO SAVEPOINT ${savepoint}`);
+        this.#log.debug({ id: connection.identifier, savepoint }, "Rolled back to savepoint");
+    }
+
+    async releaseSavepoint(
+        connection: OracleConnection,
+        savepoint: string,
+        compileQuery: QueryCompiler["compileQuery"],
+    ): Promise<void> {
+        this.#log.debug({ id: connection.identifier, savepoint }, "Releasing savepoint");
+        await connection.connection.execute(`RELEASE SAVEPOINT ${savepoint}`);
+        this.#log.debug({ id: connection.identifier, savepoint }, "Savepoint released");
     }
 
     async releaseConnection(connection: OracleConnection): Promise<void> {
