@@ -39,6 +39,7 @@ describe("OracleConnection", () => {
             sql: "select * from dual",
             parameters: [],
             query: {} as RootOperationNode,
+            queryId: { queryId: "test-id" },
         });
 
         expect(result.rows).toEqual([{ id: 1 }]);
@@ -67,6 +68,7 @@ describe("OracleConnection", () => {
             sql: "select * from dual",
             parameters: [],
             query: {} as RootOperationNode,
+            queryId: { queryId: "test-id" },
         });
 
         expect(result.numAffectedRows).toEqual(BigInt(1));
@@ -88,6 +90,7 @@ describe("OracleConnection", () => {
             sql: "select $1 from dual",
             parameters: ["id"],
             query: {} as RootOperationNode,
+            queryId: { queryId: "test-id" },
         });
 
         expect(formattedQuery.sql).toBe("select :0 from dual");
@@ -107,6 +110,7 @@ describe("OracleConnection", () => {
             sql: "select $1 from dual",
             parameters: ["id"],
             query: {} as RootOperationNode,
+            queryId: { queryId: "test-id" },
         });
 
         expect(sql).toBe("select 'id' from dual");
@@ -123,7 +127,12 @@ describe("OracleConnection", () => {
         const connection = await driver.acquireConnection();
 
         expect(() =>
-            connection.streamQuery({ sql: "select $1 from dual", parameters: ["id"], query: {} as RootOperationNode }),
+            connection.streamQuery({
+                sql: "select $1 from dual",
+                parameters: ["id"],
+                query: {} as RootOperationNode,
+                queryId: { queryId: "test-id" },
+            }),
         ).toThrow("Not implemented");
     });
 });

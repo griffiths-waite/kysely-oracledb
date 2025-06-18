@@ -90,7 +90,7 @@ describe("OracleDriver", () => {
         });
         const driver = dialect.createDriver();
         const connection = await driver.acquireConnection();
-        const spy = vi.spyOn(connection.connection, "execute").mockResolvedValue({});
+        const spy = vi.spyOn(connection.connection, "execute").mockResolvedValue(undefined);
         const dummyCompile = (() => {}) as any;
         await driver.savepoint(connection, "sp1", dummyCompile);
         expect(spy).toHaveBeenCalledWith("SAVEPOINT sp1");
@@ -105,7 +105,7 @@ describe("OracleDriver", () => {
         });
         const driver = dialect.createDriver();
         const connection = await driver.acquireConnection();
-        const spy = vi.spyOn(connection.connection, "execute").mockResolvedValue({});
+        const spy = vi.spyOn(connection.connection, "execute").mockResolvedValue(undefined);
         const dummyCompile = (() => {}) as any;
         await driver.rollbackToSavepoint(connection, "sp1", dummyCompile);
         expect(spy).toHaveBeenCalledWith("ROLLBACK TO SAVEPOINT sp1");
@@ -120,7 +120,7 @@ describe("OracleDriver", () => {
         });
         const driver = dialect.createDriver();
         const connection = await driver.acquireConnection();
-        const spy = vi.spyOn(connection.connection, "execute").mockResolvedValue({});
+        const spy = vi.spyOn(connection.connection, "execute").mockResolvedValue(undefined);
         const dummyCompile = (() => {}) as any;
         await driver.releaseSavepoint(connection, "sp1", dummyCompile);
         expect(spy).toHaveBeenCalledWith("RELEASE SAVEPOINT sp1");

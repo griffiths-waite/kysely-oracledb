@@ -1,4 +1,5 @@
-import { Driver, QueryCompiler } from "kysely";
+import { createQueryId, Driver, QueryCompiler } from "kysely";
+import { parseSavepointCommand } from "kysely/dist/cjs/parser/savepoint-parser.js";
 import { Connection } from "oracledb";
 import { OracleConnection } from "./connection.js";
 import { OracleDialectConfig } from "./dialect.js";
@@ -48,7 +49,7 @@ export class OracleDriver implements Driver {
         compileQuery: QueryCompiler["compileQuery"],
     ): Promise<void> {
         this.#log.debug({ id: connection.identifier, savepoint }, "Creating savepoint");
-        await connection.connection.execute(`SAVEPOINT ${savepoint}`);
+        await connection.executeQuery(compileQuery(parseSavepointCommand("SAVEPOINT", savepoint), createQueryId()));
         this.#log.debug({ id: connection.identifier, savepoint }, "Savepoint created");
     }
 
@@ -58,7 +59,9 @@ export class OracleDriver implements Driver {
         compileQuery: QueryCompiler["compileQuery"],
     ): Promise<void> {
         this.#log.debug({ id: connection.identifier, savepoint }, "Rolling back to savepoint");
-        await connection.connection.execute(`ROLLBACK TO SAVEPOINT ${savepoint}`);
+        await connection.executeQuery(
+            compileQuery(parseSavepointCommand("ROLLBACK TO SAVEPOINT", savepoint), createQueryId()),
+        );
         this.#log.debug({ id: connection.identifier, savepoint }, "Rolled back to savepoint");
     }
 
@@ -68,7 +71,9 @@ export class OracleDriver implements Driver {
         compileQuery: QueryCompiler["compileQuery"],
     ): Promise<void> {
         this.#log.debug({ id: connection.identifier, savepoint }, "Releasing savepoint");
-        await connection.connection.execute(`RELEASE SAVEPOINT ${savepoint}`);
+        await connection.executeQuery(
+            compileQuery(parseSavepointCommand("RELEASE SAVEPOINT", savepoint), createQueryId()),
+        );
         this.#log.debug({ id: connection.identifier, savepoint }, "Savepoint released");
     }
 
