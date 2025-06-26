@@ -1,5 +1,11 @@
 # kysely-oracledb
 
+## 2.1.0
+
+### Minor Changes
+
+- 53cbaaf: add transaction savepoint implement
+
 ## 2.0.8
 
 ### Patch Changes
