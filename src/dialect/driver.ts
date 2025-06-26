@@ -1,5 +1,6 @@
-import { Driver } from "kysely";
+import { createQueryId, Driver, QueryCompiler } from "kysely";
 import { Connection } from "oracledb";
+import { parseSavepointCommand } from "../parser/savepoint-parser.js";
 import { OracleConnection } from "./connection.js";
 import { OracleDialectConfig } from "./dialect.js";
 import { defaultLogger, Logger } from "./logger.js";
@@ -40,6 +41,40 @@ export class OracleDriver implements Driver {
     async rollbackTransaction(connection: OracleConnection): Promise<void> {
         await connection.connection.rollback();
         this.#log.debug({ id: connection.identifier }, "Transaction rolled back");
+    }
+
+    async savepoint(
+        connection: OracleConnection,
+        savepoint: string,
+        compileQuery: QueryCompiler["compileQuery"],
+    ): Promise<void> {
+        this.#log.debug({ id: connection.identifier, savepoint }, "Creating savepoint");
+        await connection.executeQuery(compileQuery(parseSavepointCommand("SAVEPOINT", savepoint), createQueryId()));
+        this.#log.debug({ id: connection.identifier, savepoint }, "Savepoint created");
+    }
+
+    async rollbackToSavepoint(
+        connection: OracleConnection,
+        savepoint: string,
+        compileQuery: QueryCompiler["compileQuery"],
+    ): Promise<void> {
+        this.#log.debug({ id: connection.identifier, savepoint }, "Rolling back to savepoint");
+        await connection.executeQuery(
+            compileQuery(parseSavepointCommand("ROLLBACK TO SAVEPOINT", savepoint), createQueryId()),
+        );
+        this.#log.debug({ id: connection.identifier, savepoint }, "Rolled back to savepoint");
+    }
+
+    async releaseSavepoint(
+        connection: OracleConnection,
+        savepoint: string,
+        compileQuery: QueryCompiler["compileQuery"],
+    ): Promise<void> {
+        this.#log.debug({ id: connection.identifier, savepoint }, "Releasing savepoint");
+        await connection.executeQuery(
+            compileQuery(parseSavepointCommand("RELEASE SAVEPOINT", savepoint), createQueryId()),
+        );
+        this.#log.debug({ id: connection.identifier, savepoint }, "Savepoint released");
     }
 
     async releaseConnection(connection: OracleConnection): Promise<void> {
