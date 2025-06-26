@@ -89,13 +89,20 @@ describe("OracleDriver", () => {
                 user: process.env.DB_USER,
             }),
         });
+
         const driver = dialect.createDriver();
+
         const connection = await driver.acquireConnection();
-        const spy = vi.spyOn(connection, "executeQuery").mockResolvedValue(undefined);
+
+        const spy = vi.spyOn(connection, "executeQuery").mockResolvedValue({ rows: [] });
+
         const dummyCompile: QueryCompiler["compileQuery"] = (node, queryId) =>
             new DefaultQueryCompiler().compileQuery(node, queryId);
+
         await driver.savepoint(connection, "sp1", dummyCompile);
+
         expect(spy).toHaveBeenCalledWith(expect.objectContaining({ sql: 'SAVEPOINT "sp1"' }));
+
         spy.mockRestore();
     });
 
@@ -105,13 +112,20 @@ describe("OracleDriver", () => {
                 user: process.env.DB_USER,
             }),
         });
+
         const driver = dialect.createDriver();
+
         const connection = await driver.acquireConnection();
-        const spy = vi.spyOn(connection, "executeQuery").mockResolvedValue(undefined);
+
+        const spy = vi.spyOn(connection, "executeQuery").mockResolvedValue({ rows: [] });
+
         const dummyCompile: QueryCompiler["compileQuery"] = (node, queryId) =>
             new DefaultQueryCompiler().compileQuery(node, queryId);
+
         await driver.rollbackToSavepoint(connection, "sp1", dummyCompile);
+
         expect(spy).toHaveBeenCalledWith(expect.objectContaining({ sql: 'ROLLBACK TO SAVEPOINT "sp1"' }));
+
         spy.mockRestore();
     });
 
@@ -121,13 +135,20 @@ describe("OracleDriver", () => {
                 user: process.env.DB_USER,
             }),
         });
+
         const driver = dialect.createDriver();
+
         const connection = await driver.acquireConnection();
-        const spy = vi.spyOn(connection, "executeQuery").mockResolvedValue(undefined);
+
+        const spy = vi.spyOn(connection, "executeQuery").mockResolvedValue({ rows: [] });
+
         const dummyCompile: QueryCompiler["compileQuery"] = (node, queryId) =>
             new DefaultQueryCompiler().compileQuery(node, queryId);
+
         await driver.releaseSavepoint(connection, "sp1", dummyCompile);
+
         expect(spy).toHaveBeenCalledWith(expect.objectContaining({ sql: 'RELEASE SAVEPOINT "sp1"' }));
+
         spy.mockRestore();
     });
 });
