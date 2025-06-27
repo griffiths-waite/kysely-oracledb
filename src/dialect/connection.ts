@@ -1,7 +1,11 @@
 import { CompiledQuery, DatabaseConnection, QueryResult } from "kysely";
 import oracledb, { Connection, ExecuteOptions } from "oracledb";
-import { v4 as uuid } from "uuid";
 import { Logger } from "./logger.js";
+import { OracleCompiledQuery } from "./query-compiler.js";
+
+export interface OracleQueryResult<R = unknown> extends QueryResult<R> {
+    outBinds?: R;
+}
 
 export class OracleConnection implements DatabaseConnection {
     #executeOptions: ExecuteOptions;
@@ -13,13 +17,16 @@ export class OracleConnection implements DatabaseConnection {
         this.#executeOptions = executeOptions || {};
         this.#connection = connection;
         this.#log = logger;
-        this.#identifier = uuid();
+        this.#identifier = crypto.randomUUID();
     }
 
-    async executeQuery<R>(compiledQuery: CompiledQuery): Promise<QueryResult<R>> {
-        const { sql, bindParams } = this.formatQuery(compiledQuery);
+    async executeQuery<R>(compiledQuery: OracleCompiledQuery): Promise<OracleQueryResult<R>> {
         const startTime = new Date();
+
+        const { sql, bindParams } = this.formatQuery(compiledQuery);
+
         this.#log.debug({ sql: this.formatQueryForLogging(compiledQuery), id: this.#identifier }, "Executing query");
+
         try {
             const result = await this.#connection.execute<R>(sql, bindParams, {
                 outFormat: oracledb.OUT_FORMAT_OBJECT,
@@ -28,22 +35,29 @@ export class OracleConnection implements DatabaseConnection {
                     return undefined;
                 },
                 ...this.#executeOptions,
+                ...compiledQuery.executeOptions,
             });
+
             const endTime = new Date();
+
             this.#log.debug(
                 { durationMs: endTime.getTime() - startTime.getTime(), id: this.#identifier },
                 "Execution complete",
             );
+
             return {
                 rows: result?.rows || [],
                 numAffectedRows: result.rowsAffected ? BigInt(result.rowsAffected) : undefined,
+                outBinds: result.outBinds,
             };
         } catch (err) {
             const endTime = new Date();
+
             this.#log.error(
                 { err, durationMs: endTime.getTime() - startTime.getTime(), id: this.#identifier },
                 "Error executing query",
             );
+
             throw err;
         }
     }

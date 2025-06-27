@@ -135,4 +135,38 @@ describe("OracleConnection", () => {
             }),
         ).toThrow("Not implemented");
     });
+    it("should pass compiled query execute options to oracledb execute", async () => {
+        const dialect = new OracleDialect({
+            pool: await oracledb.createPool({
+                user: process.env.DB_USER,
+            }),
+        });
+
+        const driver = dialect.createDriver();
+
+        const connection = await driver.acquireConnection();
+
+        const mockedExecute = vi.spyOn(connection.connection, "execute").mockImplementation(async () => {
+            return {
+                rows: [{ id: 1 }],
+                rowsAffected: 0,
+            };
+        });
+
+        await connection.executeQuery({
+            sql: "select * from dual",
+            parameters: [],
+            query: {} as RootOperationNode,
+            queryId: { queryId: "test-id" },
+            executeOptions: { autoCommit: true },
+        });
+
+        expect(mockedExecute).toHaveBeenCalledWith(
+            "select * from dual",
+            [],
+            expect.objectContaining({ autoCommit: true }),
+        );
+
+        mockedExecute.mockRestore();
+    });
 });

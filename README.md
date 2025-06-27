@@ -173,6 +173,21 @@ await generate({
 });
 ```
 
+### Plugins
+
+There is a plugin available `withExecuteOptions` that allows you to modify `oracledb.ExecuteOptions` for specific queries:
+
+```typescript
+import { withExecuteOptions } from "kysely-oracledb";
+
+const users = await db
+    .from("users")
+    .select("id", "name")
+    .where("id", 1)
+    .withPlugin(withExecuteOptions({ outFormat: oracledb.OUT_FORMAT_ARRAY }))
+    .execute();
+```
+
 ## Contributing
 
 Contributions are welcome! Please open an issue or a pull request on GitHub.

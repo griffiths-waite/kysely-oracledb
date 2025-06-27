@@ -7,7 +7,6 @@ import { defaultLogger, Logger } from "./logger.js";
 
 export class OracleDriver implements Driver {
     readonly #config: OracleDialectConfig;
-    readonly #connections = new Map<string, OracleConnection>();
     readonly #log: Logger;
 
     constructor(config: OracleDialectConfig) {
@@ -24,7 +23,6 @@ export class OracleDriver implements Driver {
             this.#log,
             this.#config.executeOptions,
         );
-        this.#connections.set(connection.identifier, connection);
         this.#log.debug({ id: connection.identifier }, "Connection acquired");
         return connection;
     }
@@ -80,8 +78,7 @@ export class OracleDriver implements Driver {
     async releaseConnection(connection: OracleConnection): Promise<void> {
         this.#log.debug({ id: connection.identifier }, "Releasing connection");
         try {
-            await this.#connections.get(connection.identifier)?.connection.close();
-            this.#connections.delete(connection.identifier);
+            await connection.connection.close();
             this.#log.debug({ id: connection.identifier }, "Connection released");
         } catch (err) {
             this.#log.error({ id: connection.identifier, err }, "Error closing connection");
@@ -89,13 +86,6 @@ export class OracleDriver implements Driver {
     }
 
     async destroy(): Promise<void> {
-        for (const connection of this.#connections.values()) {
-            await this.releaseConnection(connection as OracleConnection);
-        }
         await this.#config.pool?.close();
-    }
-
-    getConnection(id: string) {
-        return this.#connections.get(id.toString());
     }
 }
