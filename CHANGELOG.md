@@ -1,5 +1,11 @@
 # kysely-oracledb
 
+## 2.1.1
+
+### Patch Changes
+
+- 19f8cb9: Relax peer dependency on kysely
+
 ## 2.1.0
 
 ### Minor Changes
