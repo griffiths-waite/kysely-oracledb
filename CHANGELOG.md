@@ -1,5 +1,19 @@
 # kysely-oracledb
 
+## 2.2.0
+
+### Minor Changes
+
+- 1c946e9: added withExecuteOptions plugin to allow passing executeOptions to specific queries
+- 1c946e9: add outBinds to executeQuery method
+
+### Patch Changes
+
+- 1c946e9: removed dependencies on uuid and prettier
+- 62b5f71: use the query compiler for parameter placeholder processing
+- 30b40a5: fix cjs build issues
+- 1c946e9: removed connection map from driver for simplicity
+
 ## 2.1.1
 
 ### Patch Changes
