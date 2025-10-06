@@ -64,13 +64,13 @@ export class OracleConnection implements DatabaseConnection {
 
     formatQuery(query: CompiledQuery) {
         return {
-            sql: query.sql.replace(/\$(\d+)/g, (_match, p1) => `:${parseInt(p1, 10) - 1}`), // format bind params in Oracle syntax :0, :1, etc.
-            bindParams: query.parameters as unknown[],
+            sql: query.sql,
+            bindParams: [...query.parameters],
         };
     }
 
     formatQueryForLogging(query: CompiledQuery) {
-        return query.sql.replace(/\$(\d+)/g, (_match, p1) => {
+        return query.sql.replace(/\:(\d+)/g, (_match, p1) => {
             const index = parseInt(p1, 10);
             const param = query.parameters[index - 1];
             return typeof param === "string" ? `'${param}'` : (param?.toString() ?? "null");

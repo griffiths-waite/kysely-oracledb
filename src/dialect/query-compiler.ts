@@ -24,6 +24,10 @@ export class OracleQueryCompiler extends DefaultQueryCompiler {
         this.visitNode(node.alias);
     }
 
+    protected override getCurrentParameterPlaceholder(): string {
+        return `:${this.numParameters}`;
+    }
+
     compileQuery(node: RootOperationNode, queryId: QueryId): OracleCompiledQuery {
         const compiledQuery = super.compileQuery(node, queryId) as OracleCompiledQuery;
         if ((node as OracleNode).executeOptions) {
