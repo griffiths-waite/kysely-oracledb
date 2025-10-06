@@ -75,26 +75,6 @@ describe("OracleConnection", () => {
 
         mockedExecute.mockRestore();
     });
-    it("should format a query in Oracle syntax", async () => {
-        const dialect = new OracleDialect({
-            pool: await oracledb.createPool({
-                user: process.env.DB_USER,
-            }),
-        });
-
-        const driver = dialect.createDriver();
-
-        const connection = await driver.acquireConnection();
-
-        const formattedQuery = connection.formatQuery({
-            sql: "select $1 from dual",
-            parameters: ["id"],
-            query: {} as RootOperationNode,
-            queryId: { queryId: "test-id" },
-        });
-
-        expect(formattedQuery.sql).toBe("select :0 from dual");
-    });
     it("should format a query with bind params for logging", async () => {
         const dialect = new OracleDialect({
             pool: await oracledb.createPool({
@@ -107,7 +87,7 @@ describe("OracleConnection", () => {
         const connection = await driver.acquireConnection();
 
         const sql = connection.formatQueryForLogging({
-            sql: "select $1 from dual",
+            sql: "select :1 from dual",
             parameters: ["id"],
             query: {} as RootOperationNode,
             queryId: { queryId: "test-id" },

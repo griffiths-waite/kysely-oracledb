@@ -14,4 +14,8 @@ export class OracleQueryCompiler extends DefaultQueryCompiler {
         this.append(" ");
         this.visitNode(node.alias);
     }
+
+    protected override getCurrentParameterPlaceholder(): string {
+        return `:${this.numParameters}`;
+    }
 }
