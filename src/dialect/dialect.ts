@@ -1,6 +1,6 @@
 import { Dialect, Kysely } from "kysely";
 import { ExecuteOptions, Pool } from "oracledb";
-import { Options as PrettierOptions } from "prettier";
+import type { Options as PrettierOptions } from "prettier";
 import { OracleAdapter } from "./adapter.js";
 import { OracleDriver } from "./driver.js";
 import { IntropsectorDB, OracleIntrospector } from "./introspector.js";
