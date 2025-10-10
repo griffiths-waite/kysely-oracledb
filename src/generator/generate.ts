@@ -1,7 +1,7 @@
 import fs from "fs";
 import { ColumnMetadata, Kysely, TableMetadata } from "kysely";
 import path from "path";
-import { format, Options } from "prettier";
+import type { Options } from "prettier";
 import { OracleDialect, OracleDialectConfig } from "../dialect/dialect.js";
 import { IntropsectorDB } from "../dialect/introspector.js";
 import { defaultLogger } from "../dialect/logger.js";
@@ -68,8 +68,14 @@ export const generateDatabaseTypes = (tableTypes: TableTypes[], hasGeneratedFiel
     return `${importString}\n\n${tableTypesString}\n\n${exportString.join("\n")}`;
 };
 
-export const formatTypes = async (types: string, options?: Options): Promise<string> =>
-    await format(
+export const formatTypes = async (types: string, options?: Options): Promise<string> => {
+    let prettier: typeof import("prettier");
+    try {
+        prettier = await import("prettier");
+    } catch {
+        throw new Error('Formatting generated types requires "prettier" to be installed.');
+    }
+    return await prettier.format(
         types,
         options || {
             parser: "typescript",
@@ -81,6 +87,7 @@ export const formatTypes = async (types: string, options?: Options): Promise<str
             semi: true,
         },
     );
+};
 
 export const writeToFile = (types: string, path: string) => {
     fs.writeFileSync(path, types);
