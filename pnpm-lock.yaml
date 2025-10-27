@@ -24,9 +24,6 @@ importers:
       '@vitest/coverage-istanbul':
         specifier: 3.0.5
         version: 3.0.5(vitest@3.0.5)
-      prettier:
-        specifier: ^3.4.2
-        version: 3.4.2
       tsup:
         specifier: ^8.3.6
         version: 8.3.6(postcss@8.5.1)(typescript@5.7.3)
@@ -36,6 +33,10 @@ importers:
       vitest:
         specifier: ^3.0.5
         version: 3.0.5
+    optionalDependencies:
+      prettier:
+        specifier: ^3.4.2
+        version: 3.6.2
 
 packages:
 
@@ -1029,8 +1030,8 @@ packages:
     engines: {node: '>=10.13.0'}
     hasBin: true
 
-  prettier@3.4.2:
-    resolution: {integrity: sha1-pc4ftSKliL8reMpExub+WqWisT8=}
+  prettier@3.6.2:
+    resolution: {integrity: sha1-zNoCoQA+u7K/2m+DoHSXj2CLk5M=}
     engines: {node: '>=14'}
     hasBin: true
 
@@ -2293,7 +2294,8 @@ snapshots:
 
   prettier@2.8.8: {}
 
-  prettier@3.4.2: {}
+  prettier@3.6.2:
+    optional: true
 
   punycode@2.3.1: {}
 

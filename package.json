@@ -47,7 +47,6 @@
         "@changesets/cli": "^2.27.12",
         "@types/oracledb": "^6.5.3",
         "@vitest/coverage-istanbul": "3.0.5",
-        "prettier": "^3.4.2",
         "tsup": "^8.3.6",
         "typescript": "^5.7.3",
         "vitest": "^3.0.5"
@@ -55,5 +54,8 @@
     "peerDependencies": {
         "kysely": "~0.28.2",
         "oracledb": "^6.7.1"
+    },
+    "optionalDependencies": {
+        "prettier": "^3.4.2"
     }
 }
