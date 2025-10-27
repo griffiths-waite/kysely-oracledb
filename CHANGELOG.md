@@ -1,5 +1,11 @@
 # kysely-oracledb
 
+## 2.2.1
+
+### Patch Changes
+
+- a731ee7: made prettier an optional dependency to support type generation in production builds
+
 ## 2.2.0
 
 ### Minor Changes
