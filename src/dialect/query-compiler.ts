@@ -1,4 +1,12 @@
-import { AliasNode, CompiledQuery, DefaultQueryCompiler, QueryId, RootOperationNode } from "kysely";
+import {
+    AliasNode,
+    CompiledQuery,
+    DefaultQueryCompiler,
+    FetchNode,
+    OffsetNode,
+    QueryId,
+    RootOperationNode,
+} from "kysely";
 import { ExecuteOptions } from "oracledb";
 
 export type OracleNode = RootOperationNode & {
@@ -26,6 +34,18 @@ export class OracleQueryCompiler extends DefaultQueryCompiler {
 
     protected override getCurrentParameterPlaceholder(): string {
         return `:${this.numParameters}`;
+    }
+
+    protected override visitOffset(node: OffsetNode): void {
+        this.append("offset ");
+        this.visitNode(node.offset);
+        this.append(" rows");
+    }
+
+    protected override visitFetch(node: FetchNode): void {
+        this.append("fetch first ");
+        this.visitNode(node.rowCount);
+        this.append(" rows only");
     }
 
     compileQuery(node: RootOperationNode, queryId: QueryId): OracleCompiledQuery {
