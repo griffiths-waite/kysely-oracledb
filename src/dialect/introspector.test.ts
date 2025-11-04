@@ -35,7 +35,7 @@ describe("OracleIntrospector", () => {
         const schemas = await intropsector.getSchemas();
 
         expect(mockedExecute).toHaveBeenCalledWith(
-            "select username from all_users where (:1 = :2 or username in (:3)) fetch next :4 rows only",
+            "select username from all_users where (:1 = :2 or username in (:3)) fetch first :4 rows only",
             [0, 0, null, 999],
             expect.anything(),
         );
@@ -99,13 +99,13 @@ describe("OracleIntrospector", () => {
 
         expect(mockedExecute).toHaveBeenNthCalledWith(
             1,
-            "select username from all_users where (:1 = :2 or username in (:3)) fetch next :4 rows only",
+            "select username from all_users where (:1 = :2 or username in (:3)) fetch first :4 rows only",
             [0, 0, null, 999],
             expect.anything(),
         );
         expect(mockedExecute).toHaveBeenNthCalledWith(
             2,
-            "select owner, table_name from all_tables where owner in (:1) and (:2 = :3 or table_name in (:4)) fetch next :5 rows only",
+            "select owner, table_name from all_tables where owner in (:1) and (:2 = :3 or table_name in (:4)) fetch first :5 rows only",
             ["SYS", 0, 0, null, 999],
             expect.anything(),
         );
@@ -190,13 +190,13 @@ describe("OracleIntrospector", () => {
 
         expect(mockedExecute).toHaveBeenNthCalledWith(
             1,
-            "select username from all_users where (:1 = :2 or username in (:3)) fetch next :4 rows only",
+            "select username from all_users where (:1 = :2 or username in (:3)) fetch first :4 rows only",
             [0, 0, null, 999],
             expect.anything(),
         );
         expect(mockedExecute).toHaveBeenNthCalledWith(
             2,
-            "select owner, view_name from all_views where owner in (:1) and (:2 = :3 or view_name in (:4)) fetch next :5 rows only",
+            "select owner, view_name from all_views where owner in (:1) and (:2 = :3 or view_name in (:4)) fetch first :5 rows only",
             ["SYS", 0, 0, null, 999],
             expect.anything(),
         );
