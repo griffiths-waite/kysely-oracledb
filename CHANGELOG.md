@@ -1,5 +1,11 @@
 # kysely-oracledb
 
+## 2.2.2
+
+### Patch Changes
+
+- 147d936: Added support for Oracle OFFSET and FETCH clauses
+
 ## 2.2.1
 
 ### Patch Changes
