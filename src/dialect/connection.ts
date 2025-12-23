@@ -73,7 +73,26 @@ export class OracleConnection implements DatabaseConnection {
         return query.sql.replace(/\:(\d+)/g, (_match, p1) => {
             const index = parseInt(p1, 10);
             const param = query.parameters[index - 1];
-            return typeof param === "string" ? `'${param}'` : (param?.toString() ?? "null");
+
+            if (param === null || param === undefined) {
+                return "null";
+            }
+
+            if (param instanceof Date) {
+                const isoString = param.toISOString().replace("Z", "");
+                const [date, time] = isoString.split("T");
+                const [_, ms] = time.split(".");
+
+                return ms && ms !== "000"
+                    ? `TO_TIMESTAMP('${date} ${time}', 'YYYY-MM-DD HH24:MI:SS.FF3')`
+                    : `TO_DATE('${date} ${time}', 'YYYY-MM-DD HH24:MI:SS')`;
+            }
+
+            if (typeof param === "string") {
+                return `'${param}'`;
+            }
+
+            return param.toString();
         });
     }
 
