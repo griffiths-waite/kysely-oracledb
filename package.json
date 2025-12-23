@@ -8,6 +8,9 @@
     "module": "dist/index.js",
     "types": "dist/index.d.cts",
     "type": "module",
+    "publishConfig": {
+        "provenance": true
+    },
     "exports": {
         ".": {
             "import": {
