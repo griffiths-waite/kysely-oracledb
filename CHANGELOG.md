@@ -1,5 +1,11 @@
 # kysely-oracledb
 
+## 2.2.3
+
+### Patch Changes
+
+- 7a3f36a: Updated logger query formatting to format date objects as oracle dates or timestamps
+
 ## 2.2.2
 
 ### Patch Changes
