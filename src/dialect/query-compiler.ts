@@ -9,15 +9,6 @@ import {
 } from "kysely";
 import { ExecuteOptions } from "oracledb";
 
-export interface CompilerOptions {
-    /**
-     * Whether to wrap identifiers.
-     * 
-     * Defaults to `false`.
-     */
-    wrapIdentifiers?: boolean;
-}
-
 export type OracleNode = RootOperationNode & {
     executeOptions?: ExecuteOptions;
 };
@@ -27,19 +18,12 @@ export interface OracleCompiledQuery extends CompiledQuery {
 }
 
 export class OracleQueryCompiler extends DefaultQueryCompiler {
-    #wrapIdentifiers: boolean;
-
-    constructor(compilerOptions?: CompilerOptions) {
-        super();
-        this.#wrapIdentifiers = compilerOptions?.wrapIdentifiers ?? false;
-    }
-
     protected override getLeftIdentifierWrapper(): string {
-        return this.#wrapIdentifiers ? '"' : "";
+        return '"';
     }
 
     protected override getRightIdentifierWrapper(): string {
-        return this.#wrapIdentifiers ? '"' : "";
+        return '"';
     }
 
     protected override visitAlias(node: AliasNode): void {

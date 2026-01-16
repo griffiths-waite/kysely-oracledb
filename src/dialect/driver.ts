@@ -22,7 +22,6 @@ export class OracleDriver implements Driver {
             (await this.#config.pool?.getConnection()) as Connection,
             this.#log,
             this.#config.executeOptions,
-            this.#config.compilerOptions,
         );
         this.#log.debug({ id: connection.identifier }, "Connection acquired");
         return connection;
