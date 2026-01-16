@@ -1,7 +1,7 @@
 import { CompiledQuery, DatabaseConnection, QueryResult } from "kysely";
 import oracledb, { Connection, ExecuteOptions } from "oracledb";
 import { Logger } from "./logger.js";
-import { OracleCompiledQuery } from "./query-compiler.js";
+import { CompilerOptions, OracleCompiledQuery } from "./query-compiler.js";
 
 export interface OracleQueryResult<R = unknown> extends QueryResult<R> {
     outBinds?: R;
@@ -12,12 +12,14 @@ export class OracleConnection implements DatabaseConnection {
     #connection: Connection;
     #identifier: string;
     #log: Logger;
+    #compilerOptions: CompilerOptions;
 
-    constructor(connection: Connection, logger: Logger, executeOptions?: ExecuteOptions) {
+    constructor(connection: Connection, logger: Logger, executeOptions?: ExecuteOptions, compilerOptions?: CompilerOptions) {
         this.#executeOptions = executeOptions || {};
         this.#connection = connection;
         this.#log = logger;
         this.#identifier = crypto.randomUUID();
+        this.#compilerOptions = compilerOptions || {};
     }
 
     async executeQuery<R>(compiledQuery: OracleCompiledQuery): Promise<OracleQueryResult<R>> {
@@ -30,6 +32,12 @@ export class OracleConnection implements DatabaseConnection {
         try {
             const result = await this.#connection.execute<R>(sql, bindParams, {
                 outFormat: oracledb.OUT_FORMAT_OBJECT,
+                fetchTypeHandler: (metaData) => {
+                    if (!this.#compilerOptions.wrapIdentifiers) {
+                        metaData.name = metaData.name.toLowerCase();
+                    }
+                    return undefined;
+                },
                 ...this.#executeOptions,
                 ...compiledQuery.executeOptions,
             });
