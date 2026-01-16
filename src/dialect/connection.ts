@@ -30,10 +30,6 @@ export class OracleConnection implements DatabaseConnection {
         try {
             const result = await this.#connection.execute<R>(sql, bindParams, {
                 outFormat: oracledb.OUT_FORMAT_OBJECT,
-                fetchTypeHandler: (metaData) => {
-                    metaData.name = metaData.name.toLowerCase();
-                    return undefined;
-                },
                 ...this.#executeOptions,
                 ...compiledQuery.executeOptions,
             });

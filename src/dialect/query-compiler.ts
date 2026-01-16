@@ -18,14 +18,6 @@ export interface OracleCompiledQuery extends CompiledQuery {
 }
 
 export class OracleQueryCompiler extends DefaultQueryCompiler {
-    protected override getLeftIdentifierWrapper(): string {
-        return "";
-    }
-
-    protected override getRightIdentifierWrapper(): string {
-        return "";
-    }
-
     protected override visitAlias(node: AliasNode): void {
         this.visitNode(node.node);
         this.append(" ");
