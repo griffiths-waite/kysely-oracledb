@@ -373,7 +373,7 @@ describe("generate table types", () => {
         expect(
             generateTableTypes([
                 {
-                    name: "dual",
+                    name: "DUAL",
                     isView: false,
                     schema: "SYS",
                     columns: [
@@ -387,6 +387,46 @@ describe("generate table types", () => {
                     ],
                 },
             ]),
+        ).toEqual([
+            {
+                table: "'SYS.DUAL'",
+                tableTypeName: "Dual",
+                types:
+                    "interface DualTable {" +
+                    "\n" +
+                    "'dummy': string" +
+                    "\n" +
+                    "}" +
+                    "\n" +
+                    "export type Dual = Selectable<DualTable>" +
+                    "\n" +
+                    "export type NewDual = Insertable<DualTable>" +
+                    "\n" +
+                    "export type DualUpdate = Updateable<DualTable>",
+            },
+        ]);
+    });
+    it("should generate table types for system table (camelcase)", () => {
+        expect(
+            generateTableTypes(
+                [
+                    {
+                        name: "DUAL",
+                        isView: false,
+                        schema: "SYS",
+                        columns: [
+                            {
+                                name: "dummy",
+                                dataType: "VARCHAR2",
+                                isNullable: false,
+                                hasDefaultValue: false,
+                                isAutoIncrementing: false,
+                            },
+                        ],
+                    },
+                ],
+                true,
+            ),
         ).toEqual([
             {
                 table: "'sys.dual'",

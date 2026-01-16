@@ -51,8 +51,9 @@ export const generateTableTypes = (
         const selectString = `export type ${pascalCaseTable} = Selectable<${pascalCaseTable}Table>`;
         const insertString = `export type New${pascalCaseTable} = Insertable<${pascalCaseTable}Table>`;
         const updateString = `export type ${pascalCaseTable}Update = Updateable<${pascalCaseTable}Table>`;
+        const sysPrefix = useCamelCase ? "sys." : "SYS.";
         return {
-            table: table.schema === "SYS" ? "'sys." + originalTableName + "'" : originalTableName,
+            table: table.schema === "SYS" ? "'" + sysPrefix + originalTableName + "'" : originalTableName,
             tableTypeName: pascalCaseTable,
             types: `${tableString}\n${selectString}\n${insertString}\n${updateString}`,
         };
