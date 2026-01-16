@@ -10,37 +10,37 @@ import {
 import { OracleDialectConfig } from "./dialect.js";
 
 export interface AllUsersTable {
-    username: string;
+    USERNAME: string;
 }
 
 export interface AllTablesTable {
-    owner: string;
-    table_name: string;
+    OWNER: string;
+    TABLE_NAME: string;
 }
 
 export interface AllViewsTable {
-    owner: string;
-    view_name: string;
+    OWNER: string;
+    VIEW_NAME: string;
 }
 
 export interface AllTabColumnsTable {
-    owner: string;
-    table_name: string;
-    column_name: string;
-    data_type: string;
-    data_length: number | null;
-    data_precision: number | null;
-    data_scale: number | null;
-    nullable: string;
-    data_default: string | null;
-    identity_column: string;
+    OWNER: string;
+    TABLE_NAME: string;
+    COLUMN_NAME: string;
+    DATA_TYPE: string;
+    DATA_LENGTH: number | null;
+    DATA_PRECISION: number | null;
+    DATA_SCALE: number | null;
+    NULLABLE: string;
+    DATA_DEFAULT: string | null;
+    IDENTITY_COLUMN: string;
 }
 
 export interface IntropsectorDB {
-    all_users: Selectable<AllUsersTable>;
-    all_tables: Selectable<AllTablesTable>;
-    all_views: Selectable<AllViewsTable>;
-    all_tab_columns: Selectable<AllTabColumnsTable>;
+    ALL_USERS: Selectable<AllUsersTable>;
+    ALL_TABLES: Selectable<AllTablesTable>;
+    ALL_VIEWS: Selectable<AllViewsTable>;
+    ALL_TAB_COLUMNS: Selectable<AllTabColumnsTable>;
 }
 
 export class OracleIntrospector implements DatabaseIntrospector {
@@ -54,76 +54,76 @@ export class OracleIntrospector implements DatabaseIntrospector {
 
     async getSchemas(): Promise<SchemaMetadata[]> {
         const rawSchemas = await this.#db
-            .selectFrom("all_users")
-            .select("username")
+            .selectFrom("ALL_USERS")
+            .select("USERNAME")
             .where((eb) =>
                 eb.or([
                     eb(eb.val(this.#config?.generator?.schemas?.length ?? 0), "=", eb.val(0)),
-                    eb("username", "in", this.#config?.generator?.schemas ?? [null]),
+                    eb("USERNAME", "in", this.#config?.generator?.schemas ?? [null]),
                 ]),
             )
             .fetch(999) // Oracle has a limit of 999 parameters for the IN clause
             .execute();
-        return rawSchemas.map((schema) => ({ name: schema.username }));
+        return rawSchemas.map((schema) => ({ name: schema.USERNAME }));
     }
 
     async getTables(_options?: DatabaseMetadataOptions): Promise<TableMetadata[]> {
         const schemas = (await this.getSchemas()).map((it) => it.name);
-        const dualTable = { owner: "SYS", table_name: "DUAL" };
+        const dualTable = { OWNER: "SYS", TABLE_NAME: "DUAL" };
         const rawTables = await this.#db
-            .selectFrom("all_tables")
-            .select(["owner", "table_name"])
-            .where("owner", "in", schemas)
+            .selectFrom("ALL_TABLES")
+            .select(["OWNER", "TABLE_NAME"])
+            .where("OWNER", "in", schemas)
             .where((eb) =>
                 eb.or([
                     eb(eb.val(this.#config?.generator?.tables?.length ?? 0), "=", eb.val(0)),
-                    eb("table_name", "in", this.#config?.generator?.tables ?? [null]),
+                    eb("TABLE_NAME", "in", this.#config?.generator?.tables ?? [null]),
                 ]),
             )
             .fetch(999) // Oracle has a limit of 999 parameters for the IN clause
             .execute();
         const hasDualTable = rawTables.some(
-            (table) => table.owner === dualTable.owner && table.table_name === dualTable.table_name,
+            (table) => table.OWNER === dualTable.OWNER && table.TABLE_NAME === dualTable.TABLE_NAME,
         );
         if (!hasDualTable) {
             rawTables.push(dualTable);
         }
         const rawColumns = await this.#db
-            .selectFrom("all_tab_columns")
+            .selectFrom("ALL_TAB_COLUMNS")
             .select([
-                "owner",
-                "table_name",
-                "column_name",
-                "data_type",
-                "data_length",
-                "data_precision",
-                "data_scale",
-                "nullable",
-                "data_default",
-                "identity_column",
+                "OWNER",
+                "TABLE_NAME",
+                "COLUMN_NAME",
+                "DATA_TYPE",
+                "DATA_LENGTH",
+                "DATA_PRECISION",
+                "DATA_SCALE",
+                "NULLABLE",
+                "DATA_DEFAULT",
+                "IDENTITY_COLUMN",
             ])
-            .where("owner", "in", [...schemas, dualTable.owner])
+            .where("OWNER", "in", [...schemas, dualTable.OWNER])
             .where(
-                "table_name",
+                "TABLE_NAME",
                 "in",
-                rawTables.map((table) => table.table_name),
+                rawTables.map((table) => table.TABLE_NAME),
             )
             .execute();
         const tables = rawTables.map((table) => {
             const columns = rawColumns
-                .filter((col) => col.owner === table.owner && col.table_name === table.table_name)
+                .filter((col) => col.OWNER === table.OWNER && col.TABLE_NAME === table.TABLE_NAME)
                 .map((col) => ({
-                    name: col.column_name,
-                    dataType: col.data_type,
-                    dataLength: col.data_length,
-                    dataPrecision: col.data_precision,
-                    dataScale: col.data_scale,
-                    isNullable: col.nullable === "Y",
-                    hasDefaultValue: col.data_default !== null,
-                    isAutoIncrementing: col.identity_column === "YES",
+                    name: col.COLUMN_NAME,
+                    dataType: col.DATA_TYPE,
+                    dataLength: col.DATA_LENGTH,
+                    dataPrecision: col.DATA_PRECISION,
+                    dataScale: col.DATA_SCALE,
+                    isNullable: col.NULLABLE === "Y",
+                    hasDefaultValue: col.DATA_DEFAULT !== null,
+                    isAutoIncrementing: col.IDENTITY_COLUMN === "YES",
                 }));
 
-            return { schema: table.owner, name: table.table_name, isView: false, columns };
+            return { schema: table.OWNER, name: table.TABLE_NAME, isView: false, columns };
         });
         return tables;
     }
@@ -131,39 +131,39 @@ export class OracleIntrospector implements DatabaseIntrospector {
     async getViews(_options?: DatabaseMetadataOptions): Promise<TableMetadata[]> {
         const schemas = (await this.getSchemas()).map((it) => it.name);
         const rawViews = await this.#db
-            .selectFrom("all_views")
-            .select(["owner", "view_name"])
-            .where("owner", "in", schemas)
+            .selectFrom("ALL_VIEWS")
+            .select(["OWNER", "VIEW_NAME"])
+            .where("OWNER", "in", schemas)
             .where((eb) =>
                 eb.or([
                     eb(eb.val(this.#config?.generator?.views?.length ?? 0), "=", eb.val(0)),
-                    eb("view_name", "in", this.#config?.generator?.views ?? [null]),
+                    eb("VIEW_NAME", "in", this.#config?.generator?.views ?? [null]),
                 ]),
             )
             .fetch(999) // Oracle has a limit of 999 parameters for the IN clause
             .execute();
         const rawColumns = await this.#db
-            .selectFrom("all_tab_columns")
-            .select(["owner", "table_name", "column_name", "data_type", "nullable", "data_default", "identity_column"])
-            .where("owner", "in", schemas)
+            .selectFrom("ALL_TAB_COLUMNS")
+            .select(["OWNER", "TABLE_NAME", "COLUMN_NAME", "DATA_TYPE", "NULLABLE", "DATA_DEFAULT", "IDENTITY_COLUMN"])
+            .where("OWNER", "in", schemas)
             .where(
-                "table_name",
+                "TABLE_NAME",
                 "in",
-                rawViews.map((view) => view.view_name),
+                rawViews.map((view) => view.VIEW_NAME),
             )
             .execute();
         const views = rawViews.map((view) => {
             const columns = rawColumns
-                .filter((col) => col.owner === view.owner && col.table_name === view.view_name)
+                .filter((col) => col.OWNER === view.OWNER && col.TABLE_NAME === view.VIEW_NAME)
                 .map((col) => ({
-                    name: col.column_name,
-                    dataType: col.data_type,
-                    isNullable: col.nullable === "Y",
-                    hasDefaultValue: col.data_default !== null,
-                    isAutoIncrementing: col.identity_column === "YES",
+                    name: col.COLUMN_NAME,
+                    dataType: col.DATA_TYPE,
+                    isNullable: col.NULLABLE === "Y",
+                    hasDefaultValue: col.DATA_DEFAULT !== null,
+                    isAutoIncrementing: col.IDENTITY_COLUMN === "YES",
                 }));
-            const viewName = view.owner === "SYS" ? view.view_name.replace("_$", "$") : view.view_name;
-            return { schema: view.owner, name: viewName, isView: true, columns };
+            const viewName = view.OWNER === "SYS" ? view.VIEW_NAME.replace("_$", "$") : view.VIEW_NAME;
+            return { schema: view.OWNER, name: viewName, isView: true, columns };
         });
         return views;
     }

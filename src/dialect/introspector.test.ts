@@ -12,7 +12,7 @@ describe("OracleIntrospector", () => {
 
         const mockedExecute = vi.fn(() => {
             return {
-                rows: [{ username: "SYS" }],
+                rows: [{ USERNAME: "SYS" }],
                 rowsAffected: 0,
             };
         });
@@ -35,7 +35,7 @@ describe("OracleIntrospector", () => {
         const schemas = await intropsector.getSchemas();
 
         expect(mockedExecute).toHaveBeenCalledWith(
-            "select \"username\" from \"all_users\" where (:1 = :2 or \"username\" in (:3)) fetch first :4 rows only",
+            'select "USERNAME" from "ALL_USERS" where (:1 = :2 or "USERNAME" in (:3)) fetch first :4 rows only',
             [0, 0, null, 999],
             expect.anything(),
         );
@@ -50,14 +50,14 @@ describe("OracleIntrospector", () => {
         const mockedExecute = vi
             .fn()
             .mockResolvedValueOnce({
-                rows: [{ username: "SYS" }],
+                rows: [{ USERNAME: "SYS" }],
                 rowsAffected: 0,
             })
             .mockResolvedValueOnce({
                 rows: [
                     {
-                        owner: "SYS",
-                        table_name: "DUAL",
+                        OWNER: "SYS",
+                        TABLE_NAME: "DUAL",
                     },
                 ],
                 rowsAffected: 0,
@@ -65,16 +65,16 @@ describe("OracleIntrospector", () => {
             .mockResolvedValueOnce({
                 rows: [
                     {
-                        owner: "SYS",
-                        table_name: "DUAL",
-                        column_name: "DUMMY",
-                        data_type: "VARCHAR2",
-                        data_length: 1,
-                        data_precision: null,
-                        data_scale: null,
-                        nullable: "Y",
-                        data_default: null,
-                        identity_column: null,
+                        OWNER: "SYS",
+                        TABLE_NAME: "DUAL",
+                        COLUMN_NAME: "DUMMY",
+                        DATA_TYPE: "VARCHAR2",
+                        DATA_LENGTH: 1,
+                        DATA_PRECISION: null,
+                        DATA_SCALE: null,
+                        NULLABLE: "Y",
+                        DATA_DEFAULT: null,
+                        IDENTITY_COLUMN: null,
                     },
                 ],
                 rowsAffected: 0,
@@ -99,19 +99,19 @@ describe("OracleIntrospector", () => {
 
         expect(mockedExecute).toHaveBeenNthCalledWith(
             1,
-            "select \"username\" from \"all_users\" where (:1 = :2 or \"username\" in (:3)) fetch first :4 rows only",
+            'select "USERNAME" from "ALL_USERS" where (:1 = :2 or "USERNAME" in (:3)) fetch first :4 rows only',
             [0, 0, null, 999],
             expect.anything(),
         );
         expect(mockedExecute).toHaveBeenNthCalledWith(
             2,
-            "select \"owner\", \"table_name\" from \"all_tables\" where \"owner\" in (:1) and (:2 = :3 or \"table_name\" in (:4)) fetch first :5 rows only",
+            'select "OWNER", "TABLE_NAME" from "ALL_TABLES" where "OWNER" in (:1) and (:2 = :3 or "TABLE_NAME" in (:4)) fetch first :5 rows only',
             ["SYS", 0, 0, null, 999],
             expect.anything(),
         );
         expect(mockedExecute).toHaveBeenNthCalledWith(
             3,
-            "select \"owner\", \"table_name\", \"column_name\", \"data_type\", \"data_length\", \"data_precision\", \"data_scale\", \"nullable\", \"data_default\", \"identity_column\" from \"all_tab_columns\" where \"owner\" in (:1, :2) and \"table_name\" in (:3)",
+            'select "OWNER", "TABLE_NAME", "COLUMN_NAME", "DATA_TYPE", "DATA_LENGTH", "DATA_PRECISION", "DATA_SCALE", "NULLABLE", "DATA_DEFAULT", "IDENTITY_COLUMN" from "ALL_TAB_COLUMNS" where "OWNER" in (:1, :2) and "TABLE_NAME" in (:3)',
             ["SYS", "SYS", "DUAL"],
             expect.anything(),
         );
@@ -144,14 +144,14 @@ describe("OracleIntrospector", () => {
         const mockedExecute = vi
             .fn()
             .mockResolvedValueOnce({
-                rows: [{ username: "SYS" }],
+                rows: [{ USERNAME: "SYS" }],
                 rowsAffected: 0,
             })
             .mockResolvedValueOnce({
                 rows: [
                     {
-                        owner: "SYS",
-                        view_name: "DUAL",
+                        OWNER: "SYS",
+                        VIEW_NAME: "DUAL",
                     },
                 ],
                 rowsAffected: 0,
@@ -159,13 +159,13 @@ describe("OracleIntrospector", () => {
             .mockResolvedValueOnce({
                 rows: [
                     {
-                        owner: "SYS",
-                        table_name: "DUAL",
-                        column_name: "DUMMY",
-                        data_type: "VARCHAR2",
-                        nullable: "Y",
-                        data_default: null,
-                        identity_column: null,
+                        OWNER: "SYS",
+                        TABLE_NAME: "DUAL",
+                        COLUMN_NAME: "DUMMY",
+                        DATA_TYPE: "VARCHAR2",
+                        NULLABLE: "Y",
+                        DATA_DEFAULT: null,
+                        IDENTITY_COLUMN: null,
                     },
                 ],
                 rowsAffected: 0,
@@ -190,19 +190,19 @@ describe("OracleIntrospector", () => {
 
         expect(mockedExecute).toHaveBeenNthCalledWith(
             1,
-            "select \"username\" from \"all_users\" where (:1 = :2 or \"username\" in (:3)) fetch first :4 rows only",
+            'select "USERNAME" from "ALL_USERS" where (:1 = :2 or "USERNAME" in (:3)) fetch first :4 rows only',
             [0, 0, null, 999],
             expect.anything(),
         );
         expect(mockedExecute).toHaveBeenNthCalledWith(
             2,
-            "select \"owner\", \"view_name\" from \"all_views\" where \"owner\" in (:1) and (:2 = :3 or \"view_name\" in (:4)) fetch first :5 rows only",
+            'select "OWNER", "VIEW_NAME" from "ALL_VIEWS" where "OWNER" in (:1) and (:2 = :3 or "VIEW_NAME" in (:4)) fetch first :5 rows only',
             ["SYS", 0, 0, null, 999],
             expect.anything(),
         );
         expect(mockedExecute).toHaveBeenNthCalledWith(
             3,
-            "select \"owner\", \"table_name\", \"column_name\", \"data_type\", \"nullable\", \"data_default\", \"identity_column\" from \"all_tab_columns\" where \"owner\" in (:1) and \"table_name\" in (:2)",
+            'select "OWNER", "TABLE_NAME", "COLUMN_NAME", "DATA_TYPE", "NULLABLE", "DATA_DEFAULT", "IDENTITY_COLUMN" from "ALL_TAB_COLUMNS" where "OWNER" in (:1) and "TABLE_NAME" in (:2)',
             ["SYS", "DUAL"],
             expect.anything(),
         );
