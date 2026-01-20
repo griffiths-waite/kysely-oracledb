@@ -5,7 +5,7 @@ import { OracleAdapter } from "./adapter.js";
 import { OracleDriver } from "./driver.js";
 import { IntropsectorDB, OracleIntrospector } from "./introspector.js";
 import { Logger } from "./logger.js";
-import { OracleQueryCompiler } from "./query-compiler.js";
+import { CompilerOptions, OracleQueryCompiler } from "./query-compiler.js";
 
 export interface OracleDialectConfig {
     pool: Pool;
@@ -77,6 +77,7 @@ export interface OracleDialectConfig {
         prettierOptions?: PrettierOptions;
     };
     executeOptions?: ExecuteOptions;
+    compilerOptions?: CompilerOptions;
 }
 
 export class OracleDialect implements Dialect {
@@ -99,6 +100,6 @@ export class OracleDialect implements Dialect {
     }
 
     createQueryCompiler(): OracleQueryCompiler {
-        return new OracleQueryCompiler();
+        return new OracleQueryCompiler(this.#config.compilerOptions);
     }
 }
