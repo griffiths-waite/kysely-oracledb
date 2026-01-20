@@ -72,7 +72,7 @@ The dialect can be configured by passing in the following options:
 | `executeOptions`  | `oracledb.ExecuteOptions` | Default options for `execute` calls. | No       |
 | `compilerOptions` | `CompilerOptions`         | Configure query compiler behaviour.  | No       |
 
-By default, queries will use `oracledb.OUT_FORMAT_OBJECT` to fetch rows as objects, and identifiers will use quoted identifiers.
+By default, queries will use `oracledb.OUT_FORMAT_OBJECT` to fetch rows as objects, and objects will use quoted identifiers.
 
 If you prefer to use unquoted identifiers, you can set the `useNonQuotedIdentifiers` option to `true` in the compiler options.
 
