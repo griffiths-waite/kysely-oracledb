@@ -9,6 +9,15 @@ import {
 } from "kysely";
 import { ExecuteOptions } from "oracledb";
 
+export interface CompilerOptions {
+    /**
+     * Whether to use non-quoted identifiers for object names.
+     *
+     * @default false
+     */
+    useNonQuotedIdentifiers?: boolean;
+}
+
 export type OracleNode = RootOperationNode & {
     executeOptions?: ExecuteOptions;
 };
@@ -18,18 +27,27 @@ export interface OracleCompiledQuery extends CompiledQuery {
 }
 
 export class OracleQueryCompiler extends DefaultQueryCompiler {
+    #useNonQuotedIdentifiers: boolean;
+
+    constructor(compilerOptions?: CompilerOptions) {
+        super();
+        this.#useNonQuotedIdentifiers = compilerOptions?.useNonQuotedIdentifiers ?? false;
+    }
+
     protected override getLeftIdentifierWrapper(): string {
-        return '"';
+        return this.#useNonQuotedIdentifiers ? "" : '"';
     }
 
     protected override getRightIdentifierWrapper(): string {
-        return '"';
+        return this.#useNonQuotedIdentifiers ? "" : '"';
     }
 
     protected override visitAlias(node: AliasNode): void {
         this.visitNode(node.node);
         this.append(" ");
+        this.#useNonQuotedIdentifiers && this.append('"');
         this.visitNode(node.alias);
+        this.#useNonQuotedIdentifiers && this.append('"');
     }
 
     protected override getCurrentParameterPlaceholder(): string {
