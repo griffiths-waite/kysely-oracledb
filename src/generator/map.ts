@@ -1,4 +1,8 @@
-export const typeMap: Record<string, string> = {
+import oracledb from "oracledb";
+
+export const isIntervalSupported = typeof oracledb.IntervalYM !== "undefined";
+
+const typeMap: Record<string, string> = {
     BFILE: "string",
     BINARY_DOUBLE: "number",
     BINARY_FLOAT: "number",
@@ -21,12 +25,27 @@ export const typeMap: Record<string, string> = {
     RAW: "string",
     ROWID: "string",
     TIMESTAMP: "Date",
-    "TIMESTAMP(6)": "Date",
-    "TIMESTAMP WITH LOCAL TIME ZONE": "Date",
-    "TIMESTAMP(6) WITH LOCAL TIME ZONE": "Date",
-    "TIMESTAMP WITH TIME ZONE": "Date",
-    "TIMESTAMP(6) WITH TIME ZONE": "Date",
     VARCHAR2: "string",
     XMLTYPE: "string",
     VECTOR: "string",
+};
+
+export const getTypeMapping = (dataType: string) => {
+    if (typeMap[dataType]) {
+        return typeMap[dataType];
+    }
+
+    if (dataType.startsWith("TIMESTAMP")) {
+        return "Date";
+    }
+
+    if (dataType.startsWith("INTERVAL YEAR")) {
+        return isIntervalSupported ? "IntervalYM" : "unknown";
+    }
+
+    if (dataType.startsWith("INTERVAL DAY")) {
+        return isIntervalSupported ? "IntervalDS" : "unknown";
+    }
+
+    return "unknown";
 };

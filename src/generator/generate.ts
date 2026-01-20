@@ -5,7 +5,7 @@ import type { Options } from "prettier";
 import { OracleDialect, OracleDialectConfig } from "../dialect/dialect.js";
 import { IntropsectorDB } from "../dialect/introspector.js";
 import { defaultLogger } from "../dialect/logger.js";
-import { typeMap } from "./map.js";
+import { getTypeMapping, isIntervalSupported } from "./map.js";
 import { camelCase, pascalCase } from "./utils.js";
 
 interface TableTypes {
@@ -17,7 +17,16 @@ interface TableTypes {
 const warningComment = `// This file was generated automatically. Please don't edit it manually!`;
 const kyselyImport = `import type { Generated, Insertable, Selectable, Updateable } from 'kysely'`;
 const kyselyImportNoGen = `import type { Insertable, Selectable, Updateable } from 'kysely'`;
+const oracleYearMonthImport = `import type { IntervalYM } from 'oracledb'`;
+const oracleDaySecondImport = `import type { IntervalDS } from 'oracledb'`;
+const oracleIntervalImport = `import type { IntervalYM, IntervalDS } from 'oracledb'`;
 const generationComment = (date: string) => `// Timestamp: ${date}`;
+
+const hasFields = {
+    generated: false,
+    intervalYearMonth: false,
+    intervalDaySecond: false,
+};
 
 export const generateFieldTypes = (
     fields: ColumnMetadata[],
@@ -25,7 +34,16 @@ export const generateFieldTypes = (
     underscoreLeadingDigits = false,
 ): string => {
     const fieldStrings = fields.map((field) => {
-        const type = typeMap[field.dataType];
+        if (field.isAutoIncrementing) {
+            hasFields.generated = true;
+        }
+        if (isIntervalSupported && field.dataType.startsWith("INTERVAL YEAR")) {
+            hasFields.intervalYearMonth = true;
+        }
+        if (isIntervalSupported && field.dataType.startsWith("INTERVAL DAY")) {
+            hasFields.intervalDaySecond = true;
+        }
+        const type = getTypeMapping(field.dataType);
         if (!type) {
             throw new Error(`Unsupported data type: ${field.dataType}`);
         }
@@ -60,12 +78,21 @@ export const generateTableTypes = (
     });
 };
 
-export const generateDatabaseTypes = (tableTypes: TableTypes[], hasGeneratedField = false): string => {
-    const kyeslyImports = hasGeneratedField ? kyselyImport : kyselyImportNoGen;
+export const generateDatabaseTypes = (tableTypes: TableTypes[], includeFields: typeof hasFields): string => {
+    const kyeslyImports = includeFields.generated ? kyselyImport : kyselyImportNoGen;
     const tableTypesString = tableTypes.map(({ types }) => types).join("\n\n");
     const exportString = ["export interface DB {"];
     exportString.push(...tableTypes.map(({ table, tableTypeName }) => `${table}: ${tableTypeName}Table`), "}");
-    const importString = `${warningComment}\n${generationComment(new Date().toISOString())}\n\n${kyeslyImports}`;
+    let importString = `${warningComment}\n${generationComment(new Date().toISOString())}\n\n${kyeslyImports}`;
+
+    if (includeFields.intervalYearMonth && includeFields.intervalDaySecond) {
+        importString = importString.concat(`\n${oracleIntervalImport}`);
+    } else if (includeFields.intervalYearMonth) {
+        importString = importString.concat(`\n${oracleYearMonthImport}`);
+    } else if (includeFields.intervalDaySecond) {
+        importString = importString.concat(`\n${oracleDaySecondImport}`);
+    }
+
     return `${importString}\n\n${tableTypesString}\n\n${exportString.join("\n")}`;
 };
 
@@ -142,14 +169,12 @@ export const generate = async (config: OracleDialectConfig) => {
 
         tables = tables.sort((a, b) => a.name.localeCompare(b.name));
 
-        const hasGeneratedField = tables.some((table) => table.columns.some((column) => column.isAutoIncrementing));
-
         const tableTypes = generateTableTypes(
             tables,
             config.generator?.camelCase,
             config.generator?.underscoreLeadingDigits,
         );
-        const databaseTypes = generateDatabaseTypes(tableTypes, hasGeneratedField);
+        const databaseTypes = generateDatabaseTypes(tableTypes, hasFields);
 
         const formattedTypes = await formatTypes(databaseTypes, config?.generator?.prettierOptions);
 
