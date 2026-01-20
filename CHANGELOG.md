@@ -1,5 +1,16 @@
 # kysely-oracledb
 
+## 3.1.0
+
+### Minor Changes
+
+- 449b59a: added support for interval year to month and interval day to second data types when using oracledb version 6.8.0 or higher
+
+### Patch Changes
+
+- 449b59a: return unknown in generator for unsupported data types
+- 8ae95bb: Added compiler option for using non quoted identifiers
+
 ## 3.0.0
 
 ### Major Changes
