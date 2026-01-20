@@ -20,4 +20,6 @@ export default {
             close: vi.fn() as unknown as Pool["close"],
         } as Pool;
     },
+    IntervalYM: class IntervalYM {},
+    IntervalDS: class IntervalDS {},
 };
