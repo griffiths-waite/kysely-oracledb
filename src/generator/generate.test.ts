@@ -102,8 +102,8 @@ describe("generateFieldTypes", () => {
             ),
         ).toBe("'firstName': string");
     });
-    it("should throw error for unsupported data type", () => {
-        expect(() =>
+    it("should return unknown for unsupported data type", () => {
+        expect(
             generateFieldTypes([
                 {
                     name: "name",
@@ -113,7 +113,7 @@ describe("generateFieldTypes", () => {
                     isAutoIncrementing: false,
                 },
             ]),
-        ).toThrowError("Unsupported data type: UNSUPPORTED");
+        ).toBe("'name': unknown");
     });
     it("should generate type string for underscored camel case field", () => {
         expect(
@@ -131,6 +131,32 @@ describe("generateFieldTypes", () => {
                 true,
             ),
         ).toBe("'first_2ndThird': string");
+    });
+    it("should generate type string for interval year to month field", () => {
+        expect(
+            generateFieldTypes([
+                {
+                    name: "interval_field",
+                    dataType: "INTERVAL YEAR TO MONTH",
+                    isNullable: false,
+                    hasDefaultValue: false,
+                    isAutoIncrementing: false,
+                },
+            ]),
+        ).toBe("'interval_field': IntervalYM");
+    });
+    it("should generate type string for interval day to second field", () => {
+        expect(
+            generateFieldTypes([
+                {
+                    name: "interval_field",
+                    dataType: "INTERVAL DAY TO SECOND",
+                    isNullable: false,
+                    hasDefaultValue: false,
+                    isAutoIncrementing: false,
+                },
+            ]),
+        ).toBe("'interval_field': IntervalDS");
     });
 });
 
@@ -457,7 +483,13 @@ describe("generateDatabaseTypes", () => {
         vi.useRealTimers();
     });
     it("should generate database types for single table", () => {
-        expect(generateDatabaseTypes([{ table: "user", tableTypeName: "User", types: "types string" }])).toBe(
+        expect(
+            generateDatabaseTypes([{ table: "user", tableTypeName: "User", types: "types string" }], {
+                generated: false,
+                intervalDaySecond: false,
+                intervalYearMonth: false,
+            }),
+        ).toBe(
             "// This file was generated automatically. Please don't edit it manually!" +
                 "\n" +
                 "// Timestamp: 2025-01-01T00:00:00.000Z" +
@@ -474,12 +506,43 @@ describe("generateDatabaseTypes", () => {
         );
     });
     it("should generate database types for single table with generated field", () => {
-        expect(generateDatabaseTypes([{ table: "user", tableTypeName: "User", types: "types string" }], true)).toBe(
+        expect(
+            generateDatabaseTypes([{ table: "user", tableTypeName: "User", types: "types string" }], {
+                generated: true,
+                intervalDaySecond: false,
+                intervalYearMonth: false,
+            }),
+        ).toBe(
             "// This file was generated automatically. Please don't edit it manually!" +
                 "\n" +
                 "// Timestamp: 2025-01-01T00:00:00.000Z" +
                 "\n\n" +
                 "import type { Generated, Insertable, Selectable, Updateable } from 'kysely'" +
+                "\n\n" +
+                "types string" +
+                "\n\n" +
+                "export interface DB {" +
+                "\n" +
+                "user: UserTable" +
+                "\n" +
+                "}",
+        );
+    });
+    it("should generate database types for single table with interval field", () => {
+        expect(
+            generateDatabaseTypes([{ table: "user", tableTypeName: "User", types: "types string" }], {
+                generated: false,
+                intervalDaySecond: true,
+                intervalYearMonth: true,
+            }),
+        ).toBe(
+            "// This file was generated automatically. Please don't edit it manually!" +
+                "\n" +
+                "// Timestamp: 2025-01-01T00:00:00.000Z" +
+                "\n\n" +
+                "import type { Insertable, Selectable, Updateable } from 'kysely'" +
+                "\n" +
+                "import type { IntervalYM, IntervalDS } from 'oracledb'" +
                 "\n\n" +
                 "types string" +
                 "\n\n" +
