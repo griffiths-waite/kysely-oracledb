@@ -113,7 +113,7 @@ describe("OracleConnection", () => {
             queryId: { queryId: "test-id" },
         });
 
-        expect(sql).toBe("select TO_DATE('2024-01-01 00:00:00.000', 'YYYY-MM-DD HH24:MI:SS') from dual");
+        expect(sql).toBe("select TO_DATE('2024-01-01 00:00:00', 'YYYY-MM-DD HH24:MI:SS') from dual");
     });
     it("should format timestamp bind param for logging", async () => {
         const dialect = new OracleDialect({

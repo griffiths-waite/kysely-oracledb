@@ -96,11 +96,11 @@ export class OracleConnection implements DatabaseConnection {
             if (param instanceof Date) {
                 const isoString = param.toISOString().replace("Z", "");
                 const [date, time] = isoString.split("T");
-                const [_, ms] = time.split(".");
+                const [timeWithoutMs, ms] = time.split(".");
 
                 return ms && ms !== "000"
                     ? `TO_TIMESTAMP('${date} ${time}', 'YYYY-MM-DD HH24:MI:SS.FF3')`
-                    : `TO_DATE('${date} ${time}', 'YYYY-MM-DD HH24:MI:SS')`;
+                    : `TO_DATE('${date} ${timeWithoutMs}', 'YYYY-MM-DD HH24:MI:SS')`;
             }
 
             if (typeof param === "string") {
