@@ -1,5 +1,11 @@
 # kysely-oracledb
 
+## 3.1.1
+
+### Patch Changes
+
+- e0b595e: fixed formatting for date types in log messages
+
 ## 3.1.0
 
 ### Minor Changes
