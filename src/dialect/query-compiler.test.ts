@@ -139,4 +139,48 @@ describe("OracleQueryCompiler", () => {
 
         expect(compiledQuery.sql).toBe('select MY_COLUMN "myColumn" from MY_TABLE');
     });
+
+    it("should not quote table aliases when using non quoted identifier option", async () => {
+        const queryCompiler = new OracleQueryCompiler({ useNonQuotedIdentifiers: true });
+
+        const rootNode = {
+            kind: "SelectQueryNode",
+            from: {
+                kind: "FromNode",
+                froms: [
+                    {
+                        kind: "AliasNode",
+                        node: {
+                            kind: "TableNode",
+                            table: {
+                                kind: "SchemableIdentifierNode",
+                                identifier: { kind: "IdentifierNode", name: "MY_TABLE" },
+                            },
+                        },
+                        alias: { kind: "IdentifierNode", name: "t" },
+                    },
+                ],
+            },
+            selections: [
+                {
+                    kind: "SelectionNode",
+                    selection: {
+                        kind: "ReferenceNode",
+                        table: {
+                            kind: "TableNode",
+                            table: {
+                                kind: "SchemableIdentifierNode",
+                                identifier: { kind: "IdentifierNode", name: "t" },
+                            },
+                        },
+                        column: { kind: "ColumnNode", column: { kind: "IdentifierNode", name: "MY_COLUMN" } },
+                    },
+                },
+            ],
+        } as const;
+
+        const compiledQuery = queryCompiler.compileQuery(rootNode, { queryId: "test-id" });
+
+        expect(compiledQuery.sql).toBe("select t.MY_COLUMN from MY_TABLE t");
+    });
 });
