@@ -43,11 +43,16 @@ export class OracleQueryCompiler extends DefaultQueryCompiler {
     }
 
     protected override visitAlias(node: AliasNode): void {
+        const isTableAlias = node.node.kind === "TableNode" || node.node.kind === "SelectQueryNode";
         this.visitNode(node.node);
         this.append(" ");
-        this.#useNonQuotedIdentifiers && this.append('"');
+        if (this.#useNonQuotedIdentifiers && !isTableAlias) {
+            this.append('"');
+        }
         this.visitNode(node.alias);
-        this.#useNonQuotedIdentifiers && this.append('"');
+        if (this.#useNonQuotedIdentifiers && !isTableAlias) {
+            this.append('"');
+        }
     }
 
     protected override getCurrentParameterPlaceholder(): string {
