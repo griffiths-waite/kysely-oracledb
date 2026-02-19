@@ -1,5 +1,11 @@
 # kysely-oracledb
 
+## 3.1.2
+
+### Patch Changes
+
+- f3c093a: fixed issue when using non quoted identifiers option where table aliases were being quoted
+
 ## 3.1.1
 
 ### Patch Changes
