@@ -123,19 +123,33 @@ export class OracleConnection implements DatabaseConnection {
         });
 
         try {
-            for await (const row of stream) {
+            for await (const row of stream)
                 yield { rows: [row] };
-            }
         } catch (ex) {
-            if (
-                ex &&
-                typeof ex === 'object' &&
-                'code' in ex &&
-                // @ts-ignore
-                ex.code === 'ERR_STREAM_PREMATURE_CLOSE'
-            ) return
+            const code = ex && typeof ex === "object" && "errorNum" in ex
+                ? (ex as any).errorNum
+                : undefined;
 
-            throw ex
+            const oraclePrematureClose = new Set([
+                3113,  // ORA-03113
+                3114,  // ORA-03114
+                1089,  // ORA-01089 (instance shutting down)
+                7445,  // ORA-07445 (process crash)
+                600,   // ORA-00600 (internal error)
+            ]);
+
+            if (oraclePrematureClose.has(code)) {
+                this.#log.error(
+                    { err: ex, id: this.#identifier },
+                    "Stream interrupted by fatal Oracle error. Results may be partial."
+                );
+                return;
+            }
+
+            throw ex;
+        }
+        finally {
+            if (!stream.destroyed) stream.destroy();
         }
     }
 
