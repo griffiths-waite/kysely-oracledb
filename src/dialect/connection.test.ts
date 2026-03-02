@@ -148,13 +148,7 @@ describe("OracleConnection", () => {
 
         const mockRows = [{ id: 1 }, { id: 2 }, { id: 3 }];
 
-        const mockStream = {
-            [Symbol.asyncIterator]: async function* () {
-                for (const row of mockRows) {
-                    yield row;
-                }
-            },
-        };
+        const mockStream = Readable.from(mockRows);
 
         vi.spyOn(connection.connection, "queryStream").mockReturnValue(mockStream as any);
 
