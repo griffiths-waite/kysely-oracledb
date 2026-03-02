@@ -9,20 +9,18 @@ export default {
                     close: vi.fn() as unknown as Connection["close"],
                     commit: vi.fn() as unknown as Connection["commit"],
                     rollback: vi.fn() as unknown as Connection["rollback"],
+                    queryStream: vi.fn() as unknown as Connection["queryStream"],
                     execute: vi.fn(() => {
                         return {
                             rows: [],
                             rowsAffected: 0,
                         };
-                    }) as unknown as Connection["execute"],
-                    queryStream: vi.fn(() => {
-                        return [].values()
-                    }) as unknown as Connection["queryStream"]
+                    }) as unknown as Connection["execute"]
                 } as Connection);
             },
             close: vi.fn() as unknown as Pool["close"],
         } as Pool;
     },
-    IntervalYM: class IntervalYM {},
-    IntervalDS: class IntervalDS {},
+    IntervalYM: class IntervalYM { },
+    IntervalDS: class IntervalDS { },
 };
