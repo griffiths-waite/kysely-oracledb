@@ -111,7 +111,7 @@ export class OracleConnection implements DatabaseConnection {
         });
     }
 
-    async *streamQuery<R>(_compiledQuery: OracleCompiledQuery): AsyncIterableIterator<OracleQueryResult<R>> {
+    async *streamQuery<R>(_compiledQuery: OracleCompiledQuery, _chunkSize?: number): AsyncIterableIterator<OracleQueryResult<R>> {
         const { sql, bindParams } = this.formatQuery(_compiledQuery);
 
         this.#log.debug({ sql: this.formatQueryForLogging(_compiledQuery), id: this.#identifier }, "Executing query");
@@ -123,8 +123,20 @@ export class OracleConnection implements DatabaseConnection {
         });
 
         try {
-            for await (const row of stream)
-                yield { rows: [row] };
+            const chunkSize = (_chunkSize || 1);
+
+            let batch: Array<R> = [];
+            for await (const row of stream) {
+                batch.push(row);
+
+                if (batch.length === chunkSize) {
+                    yield { rows: batch };
+                    batch = []; // Reset for next chunk
+                }
+            }
+
+            if (batch.length > 0)
+                yield { rows: batch };
         } catch (ex) {
             const code = ex && typeof ex === "object" && "errorNum" in ex
                 ? (ex as any).errorNum
