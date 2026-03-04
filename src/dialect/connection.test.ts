@@ -135,7 +135,7 @@ describe("OracleConnection", () => {
 
         expect(sql).toBe("select TO_TIMESTAMP('2024-01-01 00:00:00.100', 'YYYY-MM-DD HH24:MI:SS.FF3') from dual");
     });
-    it("should throw an error for stream query as it is not implemented", async () => {
+    it("should stream rows from a query", async () => {
         const dialect = new OracleDialect({
             pool: await oracledb.createPool({
                 user: process.env.DB_USER,
@@ -146,14 +146,26 @@ describe("OracleConnection", () => {
 
         const connection = await driver.acquireConnection();
 
-        expect(() =>
-            connection.streamQuery({
-                sql: "select $1 from dual",
-                parameters: ["id"],
-                query: {} as RootOperationNode,
-                queryId: { queryId: "test-id" },
-            }),
-        ).toThrow("Not implemented");
+        const mockRows = [{ id: 1 }, { id: 2 }, { id: 3 }];
+
+        const mockStream = Readable.from(mockRows);
+
+        vi.spyOn(connection.connection, "queryStream").mockReturnValue(mockStream as any);
+
+        const results: any[] = [];
+        for await (const result of connection.streamQuery({
+            sql: "select * from dual",
+            parameters: [],
+            query: {} as RootOperationNode,
+            queryId: { queryId: "test-id" },
+        })) {
+            results.push(result);
+        }
+
+        expect(results).toHaveLength(3);
+        expect(results[0]).toEqual({ rows: [{ id: 1 }] });
+        expect(results[1]).toEqual({ rows: [{ id: 2 }] });
+        expect(results[2]).toEqual({ rows: [{ id: 3 }] });
     });
     it("should pass compiled query execute options to oracledb execute", async () => {
         const dialect = new OracleDialect({

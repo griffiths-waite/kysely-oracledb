@@ -111,8 +111,58 @@ export class OracleConnection implements DatabaseConnection {
         });
     }
 
-    streamQuery<R>(_compiledQuery: CompiledQuery): AsyncIterableIterator<QueryResult<R>> {
-        throw new Error("Not implemented");
+    async *streamQuery<R>(_compiledQuery: OracleCompiledQuery, _chunkSize?: number): AsyncIterableIterator<OracleQueryResult<R>> {
+        const { sql, bindParams } = this.formatQuery(_compiledQuery);
+
+        this.#log.debug({ sql: this.formatQueryForLogging(_compiledQuery), id: this.#identifier }, "Executing query");
+
+        const stream = this.#connection.queryStream<R>(sql, bindParams, {
+            outFormat: oracledb.OUT_FORMAT_OBJECT,
+            ...this.#executeOptions,
+            ..._compiledQuery.executeOptions,
+        });
+
+        try {
+            const chunkSize = (_chunkSize || 1);
+
+            let batch: Array<R> = [];
+            for await (const row of stream) {
+                batch.push(row);
+
+                if (batch.length === chunkSize) {
+                    yield { rows: batch };
+                    batch = []; // Reset for next chunk
+                }
+            }
+
+            if (batch.length > 0)
+                yield { rows: batch };
+        } catch (ex) {
+            const code = ex && typeof ex === "object" && "errorNum" in ex
+                ? (ex as any).errorNum
+                : undefined;
+
+            const oraclePrematureClose = new Set([
+                3113,  // ORA-03113
+                3114,  // ORA-03114
+                1089,  // ORA-01089 (instance shutting down)
+                7445,  // ORA-07445 (process crash)
+                600,   // ORA-00600 (internal error)
+            ]);
+
+            if (oraclePrematureClose.has(code)) {
+                this.#log.error(
+                    { err: ex, id: this.#identifier },
+                    "Stream interrupted by fatal Oracle error. Results may be partial."
+                );
+                return;
+            }
+
+            throw ex;
+        }
+        finally {
+            if (!stream.destroyed) stream.destroy();
+        }
     }
 
     get identifier(): string {
