@@ -2,7 +2,7 @@
     "compilerOptions": {
         "target": "esnext",
         "module": "esnext",
-        "moduleResolution": "node",
+        "moduleResolution": "bundler",
         "outDir": "./dist",
         "rootDir": "./src",
         "strict": true,
@@ -12,8 +12,7 @@
         "isolatedModules": true,
         "forceConsistentCasingInFileNames": true,
         "declaration": true,
-        "declarationMap": true,
-        "lib": ["dom", "dom.iterable", "esnext"]
+        "declarationMap": true
     },
     "include": ["src/**/*.ts"],
     "exclude": ["node_modules"]
