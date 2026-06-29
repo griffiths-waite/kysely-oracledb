@@ -1,6 +1,5 @@
 import {
     DatabaseIntrospector,
-    DatabaseMetadata,
     DatabaseMetadataOptions,
     Kysely,
     SchemaMetadata,
@@ -123,7 +122,7 @@ export class OracleIntrospector implements DatabaseIntrospector {
                     isAutoIncrementing: col.IDENTITY_COLUMN === "YES",
                 }));
 
-            return { schema: table.OWNER, name: table.TABLE_NAME, isView: false, columns };
+            return { schema: table.OWNER, name: table.TABLE_NAME, isView: false, isForeign: false, columns };
         });
         return tables;
     }
@@ -163,14 +162,8 @@ export class OracleIntrospector implements DatabaseIntrospector {
                     isAutoIncrementing: col.IDENTITY_COLUMN === "YES",
                 }));
             const viewName = view.OWNER === "SYS" ? view.VIEW_NAME.replace("_$", "$") : view.VIEW_NAME;
-            return { schema: view.OWNER, name: viewName, isView: true, columns };
+            return { schema: view.OWNER, name: viewName, isView: true, isForeign: false, columns };
         });
         return views;
-    }
-
-    async getMetadata(_options?: DatabaseMetadataOptions): Promise<DatabaseMetadata> {
-        return {
-            tables: [...(await this.getTables()), ...(await this.getViews())],
-        };
     }
 }

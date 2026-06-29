@@ -167,6 +167,7 @@ describe("generate table types", () => {
                 {
                     name: "user",
                     isView: false,
+                    isForeign: false,
                     columns: [
                         {
                             name: "id",
@@ -212,6 +213,7 @@ describe("generate table types", () => {
                 {
                     name: "user",
                     isView: false,
+                    isForeign: false,
                     columns: [
                         {
                             name: "id",
@@ -232,6 +234,7 @@ describe("generate table types", () => {
                 {
                     name: "product",
                     isView: false,
+                    isForeign: false,
                     columns: [
                         {
                             name: "id",
@@ -305,6 +308,7 @@ describe("generate table types", () => {
                     {
                         name: "user_profile",
                         isView: false,
+                        isForeign: false,
                         columns: [
                             {
                                 name: "id",
@@ -353,6 +357,7 @@ describe("generate table types", () => {
                     {
                         name: "user_1test_profile",
                         isView: false,
+                        isForeign: false,
                         columns: [
                             {
                                 name: "id",
@@ -401,6 +406,7 @@ describe("generate table types", () => {
                 {
                     name: "DUAL",
                     isView: false,
+                    isForeign: false,
                     schema: "SYS",
                     columns: [
                         {
@@ -439,6 +445,7 @@ describe("generate table types", () => {
                     {
                         name: "DUAL",
                         isView: false,
+                        isForeign: false,
                         schema: "SYS",
                         columns: [
                             {
@@ -603,6 +610,7 @@ describe("generate", () => {
                         {
                             name: "DUAL",
                             isView: false,
+                            isForeign: false,
                             columns: [
                                 {
                                     owner: "SYS",
@@ -622,6 +630,7 @@ describe("generate", () => {
                         {
                             name: "VIEW",
                             isView: true,
+                            isForeign: false,
                             columns: [
                                 {
                                     owner: "SYS",
