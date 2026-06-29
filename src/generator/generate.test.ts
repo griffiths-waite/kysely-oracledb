@@ -3,6 +3,7 @@ import oracledb from "oracledb";
 import path from "path";
 import { fileURLToPath } from "url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { OracleAdapter } from "../dialect/adapter.js";
 import { mockedWrite } from "../__mocks__/fs.js";
 import {
     checkDiff,
@@ -601,7 +602,7 @@ describe("generate", () => {
     vi.mock(import("../dialect/dialect"), () => {
         const OracleDialect = vi.fn();
         OracleDialect.prototype.createDriver = vi.fn();
-        OracleDialect.prototype.createAdapter = vi.fn();
+        OracleDialect.prototype.createAdapter = vi.fn(() => new OracleAdapter());
         OracleDialect.prototype.createQueryCompiler = vi.fn();
         OracleDialect.prototype.createIntrospector = vi.fn(() => {
             return {
