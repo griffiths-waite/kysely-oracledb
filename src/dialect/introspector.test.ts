@@ -121,6 +121,7 @@ describe("OracleIntrospector", () => {
                 schema: "SYS",
                 name: "DUAL",
                 isView: false,
+                isForeign: false,
                 columns: [
                     {
                         name: "DUMMY",
@@ -212,6 +213,7 @@ describe("OracleIntrospector", () => {
                 schema: "SYS",
                 name: "DUAL",
                 isView: true,
+                isForeign: false,
                 columns: [
                     {
                         name: "DUMMY",
