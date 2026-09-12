@@ -4,6 +4,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mockedWrite } from "../__mocks__/fs.js";
+import { OracleAdapter } from "../index.js";
 import {
     checkDiff,
     formatTypes,
@@ -167,6 +168,7 @@ describe("generate table types", () => {
                 {
                     name: "user",
                     isView: false,
+                    isForeign: false,
                     columns: [
                         {
                             name: "id",
@@ -212,6 +214,7 @@ describe("generate table types", () => {
                 {
                     name: "user",
                     isView: false,
+                    isForeign: false,
                     columns: [
                         {
                             name: "id",
@@ -232,6 +235,7 @@ describe("generate table types", () => {
                 {
                     name: "product",
                     isView: false,
+                    isForeign: false,
                     columns: [
                         {
                             name: "id",
@@ -305,6 +309,7 @@ describe("generate table types", () => {
                     {
                         name: "user_profile",
                         isView: false,
+                        isForeign: false,
                         columns: [
                             {
                                 name: "id",
@@ -353,6 +358,7 @@ describe("generate table types", () => {
                     {
                         name: "user_1test_profile",
                         isView: false,
+                        isForeign: false,
                         columns: [
                             {
                                 name: "id",
@@ -401,6 +407,7 @@ describe("generate table types", () => {
                 {
                     name: "DUAL",
                     isView: false,
+                    isForeign: false,
                     schema: "SYS",
                     columns: [
                         {
@@ -439,6 +446,7 @@ describe("generate table types", () => {
                     {
                         name: "DUAL",
                         isView: false,
+                        isForeign: false,
                         schema: "SYS",
                         columns: [
                             {
@@ -594,7 +602,7 @@ describe("generate", () => {
     vi.mock(import("../dialect/dialect"), () => {
         const OracleDialect = vi.fn();
         OracleDialect.prototype.createDriver = vi.fn();
-        OracleDialect.prototype.createAdapter = vi.fn();
+        OracleDialect.prototype.createAdapter = vi.fn(() => new OracleAdapter());
         OracleDialect.prototype.createQueryCompiler = vi.fn();
         OracleDialect.prototype.createIntrospector = vi.fn(() => {
             return {
