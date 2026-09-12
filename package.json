@@ -42,9 +42,13 @@
     "scripts": {
         "build": "tsup",
         "lint": "tsc",
-        "test": "vitest --coverage",
+        "test": "pnpm db:start && vitest",
+        "test:unit": "vitest --project unit",
+        "test:integration": "pnpm db:start && vitest --project integration",
+        "test:ci": "pnpm db:start && pnpm db:start && vitest --run && pnpm db:stop",
         "release": "pnpm build && changeset publish",
-        "dev": "pnpm lint && node dist/dev.js"
+        "db:start": "docker compose -f ./docker-compose.yaml up -d --wait",
+        "db:stop": "docker compose -f ./docker-compose.yaml down"
     },
     "devDependencies": {
         "@changesets/cli": "^2.27.12",
