@@ -9,7 +9,7 @@ services:
             - "5500:5500"
         environment:
             - ORACLE_PWD=oracle
-            - TZ=Europe/London
+            - TZ=UTC
         healthcheck:
             test: ["CMD", "/opt/oracle/checkDBStatus.sh"]
             interval: 1s

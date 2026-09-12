@@ -4,6 +4,9 @@ export default defineConfig({
     test: {
         root: "src",
         reporters: ["default"],
+        env: {
+            TZ: "UTC",
+        },
         coverage: {
             provider: "istanbul",
             reporter: ["lcov", "html", "text"],
