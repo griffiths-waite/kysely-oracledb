@@ -1,0 +1,17 @@
+name: kysely-oracledb
+
+services:
+    database:
+        image: container-registry.oracle.com/database/free:23.26.3.0-lite
+        container_name: kysely-oracledb-database
+        ports:
+            - "1521:1521"
+            - "5500:5500"
+        environment:
+            - ORACLE_PWD=oracle
+            - TZ=Europe/London
+        healthcheck:
+            test: ["CMD", "/opt/oracle/checkDBStatus.sh"]
+            interval: 1s
+            timeout: 5s
+            retries: 30
