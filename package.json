@@ -42,9 +42,9 @@
     "scripts": {
         "build": "tsup",
         "lint": "tsc",
-        "test": "vitest",
+        "test": "pnpm db:start && vitest",
         "test:unit": "vitest --project unit",
-        "test:integration": "vitest --project integration",
+        "test:integration": "pnpm db:start && vitest --project integration",
         "test:ci": "pnpm db:start && pnpm db:start && vitest --run && pnpm db:stop",
         "release": "pnpm build && changeset publish",
         "db:start": "docker compose -f ./docker-compose.yaml up -d --wait",
