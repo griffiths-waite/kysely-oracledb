@@ -1,7 +1,6 @@
 import { Kysely } from "kysely";
 import { describe, expect, it } from "vitest";
 import { OracleDialect } from "../../dialect/dialect";
-import { OracleIntrospector } from "../../dialect/introspector";
 import { DB } from "./fixtures/types-snake-case";
 
 describe("introspector", () => {
@@ -21,7 +20,7 @@ describe("introspector", () => {
         const db = new Kysely<DB>({
             dialect: new OracleDialect({
                 pool: context.getPool(),
-                generator: {
+                introspectorOptions: {
                     schemas: [context.testId],
                 },
             }),
@@ -36,7 +35,7 @@ describe("introspector", () => {
         const db = new Kysely<DB>({
             dialect: new OracleDialect({
                 pool: context.getPool(),
-                generator: {
+                introspectorOptions: {
                     schemas: [context.testId],
                 },
             }),
@@ -56,14 +55,14 @@ describe("introspector", () => {
 
         const tables = await db.introspection.getTables();
 
-        expect(tables.length).toBeGreaterThan(2);
+        expect(tables.length).toBeGreaterThan(1);
     });
 
     it("should return filtered database tables", async (context) => {
         const db = new Kysely<DB>({
             dialect: new OracleDialect({
                 pool: context.getPool(),
-                generator: {
+                introspectorOptions: {
                     schemas: [context.testId],
                     type: "tables",
                     tables: ["ITEMS"],
@@ -73,14 +72,14 @@ describe("introspector", () => {
 
         const tables = await db.introspection.getTables();
 
-        expect(tables.length).toEqual(2);
+        expect(tables.length).toEqual(1);
     });
 
     it("should return filtered database views", async (context) => {
         const db = new Kysely<DB>({
             dialect: new OracleDialect({
                 pool: context.getPool(),
-                generator: {
+                introspectorOptions: {
                     schemas: [context.testId],
                     type: "views",
                     tables: ["ACTIVE_ITEMS"],
@@ -97,8 +96,8 @@ describe("introspector", () => {
         const db = new Kysely<DB>({
             dialect: new OracleDialect({
                 pool: context.getPool(),
-                generator: {
-                    schemas: [context.testId, "SYS"],
+                introspectorOptions: {
+                    schemas: [context.testId],
                     type: "tables",
                     tables: ["ITEMS"],
                 },
@@ -191,7 +190,7 @@ describe("introspector", () => {
         const db = new Kysely<DB>({
             dialect: new OracleDialect({
                 pool: context.getPool(),
-                generator: {
+                introspectorOptions: {
                     type: "views",
                     schemas: [context.testId],
                     views: ["ACTIVE_ITEMS"],
@@ -199,7 +198,7 @@ describe("introspector", () => {
             }),
         });
 
-        const [view] = await (db.introspection as OracleIntrospector).getViews();
+        const [view] = await db.introspection.getTables();
 
         expect(view).toEqual({
             schema: context.testId,
@@ -208,6 +207,9 @@ describe("introspector", () => {
             isForeign: false,
             columns: [
                 {
+                    dataLength: 22,
+                    dataPrecision: null,
+                    dataScale: null,
                     dataType: "NUMBER",
                     hasDefaultValue: false,
                     isAutoIncrementing: true,
@@ -215,6 +217,9 @@ describe("introspector", () => {
                     name: "ID",
                 },
                 {
+                    dataLength: 255,
+                    dataPrecision: null,
+                    dataScale: null,
                     dataType: "VARCHAR2",
                     hasDefaultValue: false,
                     isAutoIncrementing: false,

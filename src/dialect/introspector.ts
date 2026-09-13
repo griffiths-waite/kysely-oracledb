@@ -58,7 +58,7 @@ export class OracleIntrospector implements DatabaseIntrospector {
         return schemas;
     }
 
-    async getTables(options: DatabaseMetadataOptions): Promise<OracleTableMetadata[]> {
+    async getTables(options?: DatabaseMetadataOptions): Promise<OracleTableMetadata[]> {
         const schemaFilter = this.#options.schemas ?? [];
         const tableFilter = this.#options.tables ?? [];
         const viewFilter = this.#options.views ?? [];
@@ -71,7 +71,7 @@ export class OracleIntrospector implements DatabaseIntrospector {
             )
             .$if(schemaFilter.length > 0, (qb) => qb.where("tables.OWNER", "in", schemaFilter))
             .$if(tableFilter.length > 0, (qb) => qb.where("tables.TABLE_NAME", "in", tableFilter))
-            .$if(!options.withInternalKyselyTables, (qb) =>
+            .$if(!options?.withInternalKyselyTables, (qb) =>
                 qb
                     .where("tables.TABLE_NAME", "!=", DEFAULT_MIGRATION_TABLE)
                     .where("tables.TABLE_NAME", "!=", DEFAULT_MIGRATION_LOCK_TABLE),
