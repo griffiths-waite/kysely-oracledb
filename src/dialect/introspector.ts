@@ -1,169 +1,186 @@
 import {
+    ColumnMetadata,
     DatabaseIntrospector,
     DatabaseMetadataOptions,
     Kysely,
     SchemaMetadata,
-    Selectable,
     TableMetadata,
 } from "kysely";
-import { OracleDialectConfig } from "./dialect.js";
+import { DEFAULT_MIGRATION_LOCK_TABLE, DEFAULT_MIGRATION_TABLE } from "kysely/migration";
 
-export interface AllUsersTable {
-    USERNAME: string;
+export interface IntrospectorOptions {
+    /**
+     * Filter by object type.
+     */
+    type?: "tables" | "views";
+    /**
+     * Filter by schema name.
+     */
+    schemas?: string[];
+    /**
+     * Filter by table name.
+     */
+    tables?: string[];
+    /**
+     * Filter by view name.
+     */
+    views?: string[];
 }
 
-export interface AllTablesTable {
-    OWNER: string;
-    TABLE_NAME: string;
+export interface OracleColumnMetadata extends ColumnMetadata {
+    dataLength: number | null;
+    dataPrecision: number | null;
+    dataScale: number | null;
 }
 
-export interface AllViewsTable {
-    OWNER: string;
-    VIEW_NAME: string;
-}
-
-export interface AllTabColumnsTable {
-    OWNER: string;
-    TABLE_NAME: string;
-    COLUMN_NAME: string;
-    DATA_TYPE: string;
-    DATA_LENGTH: number | null;
-    DATA_PRECISION: number | null;
-    DATA_SCALE: number | null;
-    NULLABLE: string;
-    DATA_DEFAULT: string | null;
-    IDENTITY_COLUMN: string;
-}
-
-export interface IntropsectorDB {
-    ALL_USERS: Selectable<AllUsersTable>;
-    ALL_TABLES: Selectable<AllTablesTable>;
-    ALL_VIEWS: Selectable<AllViewsTable>;
-    ALL_TAB_COLUMNS: Selectable<AllTabColumnsTable>;
+export interface OracleTableMetadata extends TableMetadata {
+    columns: OracleColumnMetadata[];
 }
 
 export class OracleIntrospector implements DatabaseIntrospector {
     readonly #db: Kysely<IntropsectorDB>;
-    readonly #config?: OracleDialectConfig;
+    readonly #options: IntrospectorOptions;
 
-    constructor(db: Kysely<IntropsectorDB>, config?: OracleDialectConfig) {
+    constructor(db: Kysely<any>, options: IntrospectorOptions = {}) {
         this.#db = db;
-        this.#config = config;
+        this.#options = options;
     }
 
     async getSchemas(): Promise<SchemaMetadata[]> {
-        const rawSchemas = await this.#db
+        const schemaFilter = this.#options.schemas ?? [];
+
+        const schemas = await this.#db
             .selectFrom("ALL_USERS")
-            .select("USERNAME")
-            .where((eb) =>
-                eb.or([
-                    eb(eb.val(this.#config?.generator?.schemas?.length ?? 0), "=", eb.val(0)),
-                    eb("USERNAME", "in", this.#config?.generator?.schemas ?? [null]),
-                ]),
-            )
-            .fetch(999) // Oracle has a limit of 999 parameters for the IN clause
+            .select("USERNAME as name")
+            .$if(schemaFilter.length > 0, (qb) => qb.where("USERNAME", "in", schemaFilter))
             .execute();
-        return rawSchemas.map((schema) => ({ name: schema.USERNAME }));
+
+        return schemas;
     }
 
-    async getTables(_options?: DatabaseMetadataOptions): Promise<TableMetadata[]> {
-        const schemas = (await this.getSchemas()).map((it) => it.name);
-        const dualTable = { OWNER: "SYS", TABLE_NAME: "DUAL" };
-        const rawTables = await this.#db
-            .selectFrom("ALL_TABLES")
-            .select(["OWNER", "TABLE_NAME"])
-            .where("OWNER", "in", schemas)
-            .where((eb) =>
-                eb.or([
-                    eb(eb.val(this.#config?.generator?.tables?.length ?? 0), "=", eb.val(0)),
-                    eb("TABLE_NAME", "in", this.#config?.generator?.tables ?? [null]),
-                ]),
+    async getTables(options: DatabaseMetadataOptions): Promise<OracleTableMetadata[]> {
+        const schemaFilter = this.#options.schemas ?? [];
+        const tableFilter = this.#options.tables ?? [];
+        const viewFilter = this.#options.views ?? [];
+        const typeFilter = this.#options.type;
+
+        const tablesQuery = this.#db
+            .selectFrom("ALL_TABLES as tables")
+            .innerJoin("ALL_TAB_COLUMNS as columns", (join) =>
+                join.onRef("columns.TABLE_NAME", "=", "tables.TABLE_NAME").onRef("columns.OWNER", "=", "tables.OWNER"),
             )
-            .fetch(999) // Oracle has a limit of 999 parameters for the IN clause
-            .execute();
-        const hasDualTable = rawTables.some(
-            (table) => table.OWNER === dualTable.OWNER && table.TABLE_NAME === dualTable.TABLE_NAME,
-        );
-        if (!hasDualTable) {
-            rawTables.push(dualTable);
+            .$if(schemaFilter.length > 0, (qb) => qb.where("tables.OWNER", "in", schemaFilter))
+            .$if(tableFilter.length > 0, (qb) => qb.where("tables.TABLE_NAME", "in", tableFilter))
+            .$if(!options.withInternalKyselyTables, (qb) =>
+                qb
+                    .where("tables.TABLE_NAME", "!=", DEFAULT_MIGRATION_TABLE)
+                    .where("tables.TABLE_NAME", "!=", DEFAULT_MIGRATION_LOCK_TABLE),
+            )
+            .select((eb) => [
+                "tables.OWNER as schema",
+                "tables.TABLE_NAME as tableName",
+                eb.val("table").$castTo<"table" | "view">().as("tableType"),
+                "columns.COLUMN_NAME as columnName",
+                "columns.DATA_TYPE as dataType",
+                "columns.DATA_LENGTH as dataLength",
+                "columns.DATA_PRECISION as dataPrecision",
+                "columns.DATA_SCALE as dataScale",
+                "columns.NULLABLE as isNullable",
+                "columns.DATA_DEFAULT as dataDefault",
+                "columns.IDENTITY_COLUMN as identityColumn",
+            ]);
+
+        const viewsQuery = this.#db
+            .selectFrom("ALL_VIEWS as views")
+            .innerJoin("ALL_TAB_COLUMNS as columns", (join) =>
+                join.onRef("columns.TABLE_NAME", "=", "views.VIEW_NAME").onRef("columns.OWNER", "=", "views.OWNER"),
+            )
+            .$if(schemaFilter.length > 0, (qb) => qb.where("views.OWNER", "in", schemaFilter))
+            .$if(viewFilter.length > 0, (qb) => qb.where("views.VIEW_NAME", "in", viewFilter))
+            .select((eb) => [
+                "views.OWNER as schema",
+                "views.VIEW_NAME as tableName",
+                eb.val("view").$castTo<"table" | "view">().as("tableType"),
+                "columns.COLUMN_NAME as columnName",
+                "columns.DATA_TYPE as dataType",
+                "columns.DATA_LENGTH as dataLength",
+                "columns.DATA_PRECISION as dataPrecision",
+                "columns.DATA_SCALE as dataScale",
+                "columns.NULLABLE as isNullable",
+                "columns.DATA_DEFAULT as dataDefault",
+                "columns.IDENTITY_COLUMN as identityColumn",
+            ]);
+
+        const pickQuery = () => {
+            switch (typeFilter) {
+                case "tables":
+                    return tablesQuery;
+                case "views":
+                    return viewsQuery;
+                default:
+                    return tablesQuery.unionAll(viewsQuery);
+            }
+        };
+
+        const columns = await pickQuery().execute();
+
+        const tablesMap = new Map<string, OracleTableMetadata>();
+
+        for (const column of columns) {
+            const tableKey = `${column.schema}.${column.tableName}`;
+
+            if (!tablesMap.has(tableKey)) {
+                tablesMap.set(tableKey, {
+                    schema: column.schema,
+                    name: column.tableName,
+                    isView: column.tableType === "view",
+                    isForeign: false,
+                    columns: [],
+                });
+            }
+
+            const table = tablesMap.get(tableKey);
+
+            if (table) {
+                table.columns.push({
+                    name: column.columnName,
+                    dataType: column.dataType,
+                    dataLength: column.dataLength,
+                    dataPrecision: column.dataPrecision,
+                    dataScale: column.dataScale,
+                    isNullable: column.isNullable === "Y",
+                    hasDefaultValue: column.dataDefault !== null,
+                    isAutoIncrementing: column.identityColumn === "YES",
+                });
+            }
         }
-        const rawColumns = await this.#db
-            .selectFrom("ALL_TAB_COLUMNS")
-            .select([
-                "OWNER",
-                "TABLE_NAME",
-                "COLUMN_NAME",
-                "DATA_TYPE",
-                "DATA_LENGTH",
-                "DATA_PRECISION",
-                "DATA_SCALE",
-                "NULLABLE",
-                "DATA_DEFAULT",
-                "IDENTITY_COLUMN",
-            ])
-            .where("OWNER", "in", [...schemas, dualTable.OWNER])
-            .where(
-                "TABLE_NAME",
-                "in",
-                rawTables.map((table) => table.TABLE_NAME),
-            )
-            .execute();
-        const tables = rawTables.map((table) => {
-            const columns = rawColumns
-                .filter((col) => col.OWNER === table.OWNER && col.TABLE_NAME === table.TABLE_NAME)
-                .map((col) => ({
-                    name: col.COLUMN_NAME,
-                    dataType: col.DATA_TYPE,
-                    dataLength: col.DATA_LENGTH,
-                    dataPrecision: col.DATA_PRECISION,
-                    dataScale: col.DATA_SCALE,
-                    isNullable: col.NULLABLE === "Y",
-                    hasDefaultValue: col.DATA_DEFAULT !== null,
-                    isAutoIncrementing: col.IDENTITY_COLUMN === "YES",
-                }));
 
-            return { schema: table.OWNER, name: table.TABLE_NAME, isView: false, isForeign: false, columns };
-        });
-        return tables;
+        return Array.from(tablesMap.values());
     }
+}
 
-    async getViews(_options?: DatabaseMetadataOptions): Promise<TableMetadata[]> {
-        const schemas = (await this.getSchemas()).map((it) => it.name);
-        const rawViews = await this.#db
-            .selectFrom("ALL_VIEWS")
-            .select(["OWNER", "VIEW_NAME"])
-            .where("OWNER", "in", schemas)
-            .where((eb) =>
-                eb.or([
-                    eb(eb.val(this.#config?.generator?.views?.length ?? 0), "=", eb.val(0)),
-                    eb("VIEW_NAME", "in", this.#config?.generator?.views ?? [null]),
-                ]),
-            )
-            .fetch(999) // Oracle has a limit of 999 parameters for the IN clause
-            .execute();
-        const rawColumns = await this.#db
-            .selectFrom("ALL_TAB_COLUMNS")
-            .select(["OWNER", "TABLE_NAME", "COLUMN_NAME", "DATA_TYPE", "NULLABLE", "DATA_DEFAULT", "IDENTITY_COLUMN"])
-            .where("OWNER", "in", schemas)
-            .where(
-                "TABLE_NAME",
-                "in",
-                rawViews.map((view) => view.VIEW_NAME),
-            )
-            .execute();
-        const views = rawViews.map((view) => {
-            const columns = rawColumns
-                .filter((col) => col.OWNER === view.OWNER && col.TABLE_NAME === view.VIEW_NAME)
-                .map((col) => ({
-                    name: col.COLUMN_NAME,
-                    dataType: col.DATA_TYPE,
-                    isNullable: col.NULLABLE === "Y",
-                    hasDefaultValue: col.DATA_DEFAULT !== null,
-                    isAutoIncrementing: col.IDENTITY_COLUMN === "YES",
-                }));
-            const viewName = view.OWNER === "SYS" ? view.VIEW_NAME.replace("_$", "$") : view.VIEW_NAME;
-            return { schema: view.OWNER, name: viewName, isView: true, isForeign: false, columns };
-        });
-        return views;
-    }
+interface IntropsectorDB {
+    ALL_USERS: {
+        USERNAME: string;
+    };
+    ALL_TABLES: {
+        OWNER: string;
+        TABLE_NAME: string;
+    };
+    ALL_VIEWS: {
+        OWNER: string;
+        VIEW_NAME: string;
+    };
+    ALL_TAB_COLUMNS: {
+        OWNER: string;
+        TABLE_NAME: string;
+        COLUMN_NAME: string;
+        DATA_TYPE: string;
+        DATA_LENGTH: number | null;
+        DATA_PRECISION: number | null;
+        DATA_SCALE: number | null;
+        NULLABLE: string;
+        DATA_DEFAULT: string | null;
+        IDENTITY_COLUMN: string;
+    };
 }
