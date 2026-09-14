@@ -18,13 +18,9 @@ export interface IntrospectorOptions {
      */
     schemas?: string[];
     /**
-     * Filter by table name.
+     * Filter by table or view name.
      */
     tables?: string[];
-    /**
-     * Filter by view name.
-     */
-    views?: string[];
 }
 
 export interface OracleColumnMetadata extends ColumnMetadata {
@@ -61,7 +57,6 @@ export class OracleIntrospector implements DatabaseIntrospector {
     async getTables(options?: DatabaseMetadataOptions): Promise<OracleTableMetadata[]> {
         const schemaFilter = this.#options.schemas ?? [];
         const tableFilter = this.#options.tables ?? [];
-        const viewFilter = this.#options.views ?? [];
         const typeFilter = this.#options.type;
 
         const tablesQuery = this.#db
@@ -96,7 +91,7 @@ export class OracleIntrospector implements DatabaseIntrospector {
                 join.onRef("columns.TABLE_NAME", "=", "views.VIEW_NAME").onRef("columns.OWNER", "=", "views.OWNER"),
             )
             .$if(schemaFilter.length > 0, (qb) => qb.where("views.OWNER", "in", schemaFilter))
-            .$if(viewFilter.length > 0, (qb) => qb.where("views.VIEW_NAME", "in", viewFilter))
+            .$if(tableFilter.length > 0, (qb) => qb.where("views.VIEW_NAME", "in", tableFilter))
             .select((eb) => [
                 "views.OWNER as schema",
                 "views.VIEW_NAME as tableName",

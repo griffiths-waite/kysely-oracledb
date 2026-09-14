@@ -193,7 +193,7 @@ describe("introspector", () => {
                 introspectorOptions: {
                     type: "views",
                     schemas: [context.testId],
-                    views: ["ACTIVE_ITEMS"],
+                    tables: ["ACTIVE_ITEMS"],
                 },
             }),
         });
