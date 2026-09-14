@@ -11,9 +11,10 @@ export default defineConfig({
             provider: "istanbul",
             reporter: ["lcov", "html", "text"],
             reportsDirectory: "../coverage",
-            exclude: ["**/tests/**"],
+            include: ["**/*.ts"],
+            exclude: ["**/tests/**", "**/*.d.ts"],
         },
-        workspace: [
+        projects: [
             {
                 extends: true,
                 test: {
