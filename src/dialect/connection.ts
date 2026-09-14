@@ -1,6 +1,6 @@
 import { CompiledQuery, DatabaseConnection, QueryResult } from "kysely";
 import oracledb, { Connection, ExecuteOptions } from "oracledb";
-import { isIntervalSupported } from "../generator/map.js";
+import { isIntervalSupported } from "../features.js";
 import { Logger } from "./logger.js";
 import { OracleCompiledQuery } from "./query-compiler.js";
 
@@ -75,14 +75,14 @@ export class OracleConnection implements DatabaseConnection {
     }
 
     formatBindParam(param: unknown) {
-        if (isIntervalSupported && param instanceof oracledb.IntervalYM) {
+        if (isIntervalSupported() && param instanceof oracledb.IntervalYM) {
             return {
                 dir: oracledb.BIND_IN,
                 type: oracledb.DB_TYPE_INTERVAL_YM,
                 val: param,
             };
         }
-        if (isIntervalSupported && param instanceof oracledb.IntervalDS) {
+        if (isIntervalSupported() && param instanceof oracledb.IntervalDS) {
             return {
                 dir: oracledb.BIND_IN,
                 type: oracledb.DB_TYPE_INTERVAL_DS,
