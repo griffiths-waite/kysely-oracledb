@@ -3,7 +3,7 @@ import { sql } from "kysely";
 import path from "path";
 import { afterEach, beforeEach, describe, expect, it, TestContext } from "vitest";
 import { OracleDialectConfig } from "../../dialect/dialect";
-import { generate } from "../../generator/generate";
+import { generate, GeneratorConfig } from "../../generator/generate";
 
 describe("generate", () => {
     let tmpDir: string;
@@ -16,19 +16,16 @@ describe("generate", () => {
         fs.rmSync(tmpDir, { recursive: true, force: true });
     });
 
-    const createConfig = (
-        context: TestContext,
-        config: Partial<OracleDialectConfig["generator"]> = {},
-    ): OracleDialectConfig => {
+    const createConfig = (context: TestContext, config: Partial<GeneratorConfig> = {}): OracleDialectConfig => {
         return {
             pool: context.getPool(),
-            generator: {
+            introspectorOptions: {
                 schemas: [context.testId],
                 type: "tables",
-                filePath: path.join(tmpDir, "types.ts"),
-                metadataFilePath: path.join(tmpDir, "tables.json"),
-                ...config,
             },
+            filePath: path.join(tmpDir, "types.ts"),
+            metadataFilePath: path.join(tmpDir, "tables.json"),
+            ...config,
         };
     };
 
@@ -46,13 +43,6 @@ describe("generate", () => {
           // Timestamp: <TIMESTAMP>
 
           import type { Generated, Insertable, Selectable, Updateable } from 'kysely';
-
-          interface DualTable {
-              DUMMY: string | null;
-          }
-          export type Dual = Selectable<DualTable>;
-          export type NewDual = Insertable<DualTable>;
-          export type DualUpdate = Updateable<DualTable>;
 
           interface ItemTagsTable {
               ITEM_ID: number;
@@ -84,7 +74,6 @@ describe("generate", () => {
           export type TagsUpdate = Updateable<TagsTable>;
 
           export interface DB {
-              'SYS.DUAL': DualTable;
               ITEM_TAGS: ItemTagsTable;
               ITEMS: ItemsTable;
               TAGS: TagsTable;
@@ -103,13 +92,6 @@ describe("generate", () => {
           // Timestamp: <TIMESTAMP>
 
           import type { Generated, Insertable, Selectable, Updateable } from 'kysely';
-
-          interface DualTable {
-              dummy: string | null;
-          }
-          export type Dual = Selectable<DualTable>;
-          export type NewDual = Insertable<DualTable>;
-          export type DualUpdate = Updateable<DualTable>;
 
           interface ItemTagsTable {
               itemId: number;
@@ -141,7 +123,6 @@ describe("generate", () => {
           export type TagsUpdate = Updateable<TagsTable>;
 
           export interface DB {
-              'sys.dual': DualTable;
               itemTags: ItemTagsTable;
               items: ItemsTable;
               tags: TagsTable;
@@ -155,9 +136,11 @@ describe("generate", () => {
 
         await generate(
             createConfig(context, {
-                schemas: [context.testId],
-                type: "tables",
-                tables: ["ITEMS"],
+                introspectorOptions: {
+                    schemas: [context.testId],
+                    type: "tables",
+                    tables: ["ITEMS"],
+                },
                 camelCase: true,
             }),
         );
@@ -169,13 +152,6 @@ describe("generate", () => {
           // Timestamp: <TIMESTAMP>
 
           import type { Generated, Insertable, Selectable, Updateable } from 'kysely';
-
-          interface DualTable {
-              dummy: string | null;
-          }
-          export type Dual = Selectable<DualTable>;
-          export type NewDual = Insertable<DualTable>;
-          export type DualUpdate = Updateable<DualTable>;
 
           interface ItemsTable {
               id: Generated<number>;
@@ -192,7 +168,6 @@ describe("generate", () => {
           export type ItemsUpdate = Updateable<ItemsTable>;
 
           export interface DB {
-              'sys.dual': DualTable;
               items: ItemsTable;
           }
           "
@@ -204,9 +179,11 @@ describe("generate", () => {
 
         await generate(
             createConfig(context, {
-                schemas: [context.testId],
-                type: "tables",
-                tables: ["ITEMS"],
+                introspectorOptions: {
+                    schemas: [context.testId],
+                    type: "tables",
+                    tables: ["ITEMS"],
+                },
                 camelCase: true,
                 underscoreLeadingDigits: true,
             }),
@@ -219,13 +196,6 @@ describe("generate", () => {
           // Timestamp: <TIMESTAMP>
 
           import type { Generated, Insertable, Selectable, Updateable } from 'kysely';
-
-          interface DualTable {
-              dummy: string | null;
-          }
-          export type Dual = Selectable<DualTable>;
-          export type NewDual = Insertable<DualTable>;
-          export type DualUpdate = Updateable<DualTable>;
 
           interface ItemsTable {
               id: Generated<number>;
@@ -242,7 +212,6 @@ describe("generate", () => {
           export type ItemsUpdate = Updateable<ItemsTable>;
 
           export interface DB {
-              'sys.dual': DualTable;
               items: ItemsTable;
           }
           "
@@ -262,9 +231,11 @@ describe("generate", () => {
 
         await generate(
             createConfig(context, {
-                schemas: [context.testId],
-                type: "tables",
-                tables: ["ITEMS"],
+                introspectorOptions: {
+                    schemas: [context.testId],
+                    type: "tables",
+                    tables: ["ITEMS"],
+                },
             }),
         );
 
@@ -276,13 +247,6 @@ describe("generate", () => {
 
           import type { Generated, Insertable, Selectable, Updateable } from 'kysely';
           import type { IntervalYM, IntervalDS } from 'oracledb';
-
-          interface DualTable {
-              DUMMY: string | null;
-          }
-          export type Dual = Selectable<DualTable>;
-          export type NewDual = Insertable<DualTable>;
-          export type DualUpdate = Updateable<DualTable>;
 
           interface ItemsTable {
               ID: Generated<number>;
@@ -300,7 +264,6 @@ describe("generate", () => {
           export type ItemsUpdate = Updateable<ItemsTable>;
 
           export interface DB {
-              'SYS.DUAL': DualTable;
               ITEMS: ItemsTable;
           }
           "

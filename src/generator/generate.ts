@@ -1,9 +1,8 @@
 import fs from "fs";
 import { ColumnMetadata, Kysely, TableMetadata } from "kysely";
 import path from "path";
-import type { Options } from "prettier";
+import type { Options as PrettierOptions } from "prettier";
 import { OracleDialect, OracleDialectConfig } from "../dialect/dialect.js";
-import { IntropsectorDB } from "../dialect/introspector.js";
 import { defaultLogger } from "../dialect/logger.js";
 import { getTypeMapping, isIntervalSupported } from "./map.js";
 import { camelCase, pascalCase } from "./utils.js";
@@ -96,7 +95,7 @@ export const generateDatabaseTypes = (tableTypes: TableTypes[], includeFields: t
     return `${importString}\n\n${tableTypesString}\n\n${exportString.join("\n")}`;
 };
 
-export const formatTypes = async (types: string, options?: Options): Promise<string> => {
+export const formatTypes = async (types: string, options?: PrettierOptions): Promise<string> => {
     let prettier: typeof import("prettier");
     try {
         prettier = await import("prettier");
@@ -137,51 +136,75 @@ const updateTypes = (
     filePath: string,
     metadata: TableMetadata[],
     metadataFilePath: string,
-    config: OracleDialectConfig,
+    config: GeneratorConfig,
 ) => {
     writeToFile(types, filePath);
-    if (config.generator?.metadata) {
+    if (config.metadata) {
         writeToFile(JSON.stringify(metadata, null, 2), metadataFilePath);
     }
 };
 
-export const generate = async (config: OracleDialectConfig) => {
+export interface GeneratorConfig extends OracleDialectConfig {
+    /**
+     * Use camelCase for generated types.
+     *
+     * @default false
+     */
+    camelCase?: boolean;
+    /**
+     * Underscore leading digits when using camelCase.
+     *
+     * @default false
+     */
+    underscoreLeadingDigits?: boolean;
+    /**
+     * Output the raw database table metadata.
+     *
+     * @default false
+     */
+    metadata?: boolean;
+    /**
+     * File path to write the generated types to.
+     *
+     * @default "types.ts"
+     */
+    filePath?: string;
+    /**
+     * File path to write the table metadata to.
+     *
+     * @default "tables.json"
+     */
+    metadataFilePath?: string;
+    /**
+     * Whether to check for differences between the generated types and the existing types in the database.
+     *
+     * Defaults to `false`.
+     */
+    checkDiff?: boolean;
+    /**
+     * Prettier options to format the generated types.
+     */
+    prettierOptions?: PrettierOptions;
+}
+
+export const generate = async (config: GeneratorConfig) => {
     const log = config.logger ? config.logger : defaultLogger;
-    const type = config.generator?.type ?? "tables";
     try {
-        const dialect = new OracleDialect(config);
-        const db = new Kysely<IntropsectorDB>({ dialect });
-        const introspector = dialect.createIntrospector(db);
+        const db = new Kysely({ dialect: new OracleDialect(config) });
 
-        let tables: TableMetadata[];
-
-        switch (type) {
-            case "tables":
-                tables = await introspector.getTables();
-                break;
-            case "views":
-                tables = await introspector.getViews();
-                break;
-            case "all":
-                tables = [...(await introspector.getTables()), ...(await introspector.getViews())];
-                break;
-        }
+        let tables = await db.introspection.getTables();
 
         tables = tables.sort((a, b) => a.name.localeCompare(b.name));
 
-        const tableTypes = generateTableTypes(
-            tables,
-            config.generator?.camelCase,
-            config.generator?.underscoreLeadingDigits,
-        );
+        const tableTypes = generateTableTypes(tables, config.camelCase, config.underscoreLeadingDigits);
         const databaseTypes = generateDatabaseTypes(tableTypes, hasFields);
 
-        const formattedTypes = await formatTypes(databaseTypes, config?.generator?.prettierOptions);
+        const formattedTypes = await formatTypes(databaseTypes, config.prettierOptions);
 
-        const filePath = config.generator?.filePath || path.join(process.cwd(), "types.ts");
-        const metadataFilePath = config.generator?.metadataFilePath || path.join(process.cwd(), "tables.json");
+        const filePath = config.filePath || path.join(process.cwd(), "types.ts");
+        const metadataFilePath = config.metadataFilePath || path.join(process.cwd(), "tables.json");
 
-        if (config.generator?.checkDiff) {
+        if (config.checkDiff) {
             let diff = true;
 
             try {
