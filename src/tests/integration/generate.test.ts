@@ -151,7 +151,7 @@ describe("generate", () => {
     });
 
     it("should not retain underscores before leading digits by default", async (context) => {
-        await context.db.schema.alterTable("ITEMS").addColumn("WITHOUT_1UNDERSCORE", "char(2)").execute();
+        await context.db.schema.alterTable("ITEMS").addColumn("WITHOUT_1UNDERSCORE", "char(1)").execute();
 
         await generate(
             createConfig(context, {
@@ -200,7 +200,7 @@ describe("generate", () => {
     });
 
     it("should retain underscores before leading digits when option enabled", async (context) => {
-        await context.db.schema.alterTable("ITEMS").addColumn("WITH_1UNDERSCORE", "char(2)").execute();
+        await context.db.schema.alterTable("ITEMS").addColumn("WITH_1UNDERSCORE", "char(1)").execute();
 
         await generate(
             createConfig(context, {
@@ -252,12 +252,12 @@ describe("generate", () => {
     it("should generate interval columns when feature is supported", async (context) => {
         await context.db.schema
             .alterTable("ITEMS")
-            .addColumn("SUBSCRIPTION_LENGTH", sql`interval year(2) to month`)
+            .addColumn("YEAR_MONTH_INTERVAL", sql`interval year(2) to month`)
             .execute();
 
         await context.db.schema
             .alterTable("ITEMS")
-            .addColumn("SESSION_DURATION", sql`interval day(2) to second(6)`)
+            .addColumn("DAY_SECOND_INTERVAL", sql`interval day(2) to second(6)`)
             .execute();
 
         await generate(
@@ -275,6 +275,7 @@ describe("generate", () => {
           // Timestamp: <TIMESTAMP>
 
           import type { Generated, Insertable, Selectable, Updateable } from 'kysely';
+          import type { IntervalYM, IntervalDS } from 'oracledb';
 
           interface DualTable {
               DUMMY: string | null;
@@ -291,8 +292,8 @@ describe("generate", () => {
               NOTES: string | null;
               CREATED_AT: Date;
               UPDATED_AT: Date | null;
-              SUBSCRIPTION_LENGTH: unknown | null;
-              SESSION_DURATION: unknown | null;
+              YEAR_MONTH_INTERVAL: IntervalYM | null;
+              DAY_SECOND_INTERVAL: IntervalDS | null;
           }
           export type Items = Selectable<ItemsTable>;
           export type NewItems = Insertable<ItemsTable>;

@@ -7,10 +7,6 @@ settings:
 importers:
 
   .:
-    dependencies:
-      oracledb:
-        specifier: ^6.7.1
-        version: 6.7.1
     devDependencies:
       '@changesets/cli':
         specifier: ^2.27.12
@@ -27,6 +23,9 @@ importers:
       kysely:
         specifier: ^0.29.5
         version: 0.29.5
+      oracledb:
+        specifier: ^6.8.0
+        version: 6.8.0
       tsup:
         specifier: ^8.3.6
         version: 8.3.6(postcss@8.5.28)(typescript@5.7.3)
@@ -1118,8 +1117,8 @@ packages:
     resolution: {integrity: sha512-XrsrhT5sybtKI6wakr2SPOlGZWWYbUXZ7a0jT8/QOeAPau+1X/bSegNe5YR75oJmEZQbKningirmGOEJCIk61Q==}
     engines: {node: '>=12.20.0'}
 
-  oracledb@6.7.1:
-    resolution: {integrity: sha1-oBQTIlfbkfjeEQEPyJyRfVO34dY=}
+  oracledb@6.8.0:
+    resolution: {integrity: sha512-A4ds4n4xtjPTzk1gwrHWuMeWsEcrScF0GFgVebGrhNpHSAzn6eDwMKcSbakZODKfFcI099iqhmqWsgko8D+7Ww==}
     engines: {node: '>=14.6'}
 
   os-tmpdir@1.0.2:
@@ -2488,7 +2487,7 @@ snapshots:
 
   obug@2.2.1: {}
 
-  oracledb@6.7.1: {}
+  oracledb@6.8.0: {}
 
   os-tmpdir@1.0.2: {}
 
