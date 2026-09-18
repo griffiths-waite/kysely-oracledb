@@ -8,186 +8,174 @@
 npm install kysely oracle-db kysely-oracledb
 ```
 
-## Usage
+## Dialect Usage
 
-### Oracle DB Dialect
-
-To use the Dialect with Kysely, you will need to pass in an Oracle DB `Pool` to the `OracleDialect` constructor.
+Create a dialect with a connection pool, then pass it to the Kysely instance:
 
 ```typescript
-// See the section below for more information on generating types.
-import type { DB } from "./types.ts";
-
+import type { DB } from "./types.js";
 import oracledb from "oracledb";
-import { Kysely } from "kysely";
+import { Kysely, type Generated } from "kysely";
 import { OracleDialect } from "kysely-oracledb";
 
-const db = new Kysely<DB>({
-    dialect: new OracleDialect({
-        pool: await oracledb.createPool({
-            user: "user",
-            password: "pass",
-            connectionString: "connection-string",
-        }),
-    }),
+const pool = await oracledb.createPool({
+    user: "username",
+    password: "password",
+    connectionString: "localhost:1521/FREEPDB1",
+});
+
+const dialect = new OracleDialect({
+    pool,
+});
+
+const db = new kysely<DB>({ dialect });
+```
+
+You can now use Kysely to query your database:
+
+```typescript
+import { db } from "./database.js";
+
+const items = await db
+    .from("ITEMS")
+    .select("ID", "NAME")
+    .where("AMOUNT", ">", 10)
+    .execute();
+
+console.log(items);
+```
+
+Read the [type generation](#type-generation) section for information on generating types.
+
+## Dialect Configuration
+
+### `logger`
+
+A logger instance to enable logging for queries, connections, transactions, and errors.
+
+### `executeOptions`
+
+Global execute options to pass to every Kysely query.
+
+For example, to commit transactions without needing to wrap each query in a `db.transaction()`, you can pass the `autoCommit` option to the dialect:
+
+```typescript
+import oracledb from "oracledb";
+import { OracleDialect } from "kysely-oracledb";
+
+const pool = await oracledb.createPool({
+    user: "username",
+    password: "password",
+    connectionString: "localhost:1521/FREEPDB1",
+});
+
+const dialect = new OracleDialect({
+    pool,
+    executeOptions: {
+        autoCommit: true,
+    },
 });
 ```
 
-You can now use the `db` instance to query your Oracle database.
+### `compilerOptions`
+
+Kysely compiler options. Currently the only option available is `useNonQuotedIdentifiers` which controls how the compiled SQL represents the names of objects. Queries use quoted identifiers by default.
+
+### `introspectorOptions`
+
+Kysely allows you to extract table, view, and schema metadata using the `Introspector` class. The Oracle dialect accepts additional introspection options to filter this metadata.
+
+## Extending Kysely
+
+Kysely doesn't support Oracle specific syntax. In these scenarios, you can extend Kysely using the sql template tag.
+
+For example, to round a number column:
 
 ```typescript
-const users = await db
-    .from("users")
-    .select("id", "name")
-    .where("id", 1)
+import { db } from "./database.js";
+import type { Expression } from "kysely";
+
+const round = (number: Expression<number>, decimals: number) =>
+    sql<number>`round(${number},${decimals})`;
+
+const items = await db
+    .from("ITEMS")
+    .select("ID", round("AMOUNT", 1).as("AMOUNT"))
     .execute();
 ```
 
-For functions that are specific to Oracle DB, you can use the template tag to execute raw SQL. For example, to use the `ROUND` function:
+Read the [official documentation](https://kysely.dev/docs/recipes/extending-kysely) for more information on extending Kysely.
 
-```typescript
-// See the section below for more information on generating types.
-import type { DB } from "./types.ts";
-import type { ExpressionWrapper } from "kysely";
+## Type Generation
 
-const round = (
-    number: ExpressionWrapper<DB, keyof DB, number>,
-    decimals: number,
-) => sql<number>`round(${number},${decimals})`;
-
-const products = await db
-    .from("products")
-    .select("id", round("price", 2).as("price"))
-    .execute();
-```
-
-### Dialect Configuration
-
-The dialect can be configured by passing in the following options:
-
-| Option            | Type                      | Description                          | Required |
-| ----------------- | ------------------------- | ------------------------------------ | -------- |
-| `pool`            | `oracledb.Pool`           | Oracle DB connection pool.           | Yes      |
-| `logger`          | `Logger`                  | Logger instance for debug messages.  | No       |
-| `executeOptions`  | `oracledb.ExecuteOptions` | Default options for `execute` calls. | No       |
-| `compilerOptions` | `CompilerOptions`         | Configure query compiler behaviour.  | No       |
-
-By default, queries will use `oracledb.OUT_FORMAT_OBJECT` to fetch rows as objects, and objects will use quoted identifiers.
-
-If you prefer to use unquoted identifiers, you can set the `useNonQuotedIdentifiers` option to `true` in the compiler options.
-
-If you want to convert columns and tables to use camel case, you can pass the `CamelCasePlugin` to Kysely:
-
-```typescript
-import type { DB } from "./types.ts";
-
-import oracledb from "oracledb";
-import { Kysely, CamelCasePlugin } from "kysely";
-import { OracleDialect } from "kysely-oracledb";
-
-const db = new Kysely<DB>({
-    dialect: new OracleDialect({
-        pool: await oracledb.createPool({
-            user: "user",
-            password: "pass",
-            connectionString: "connection-string",
-        }),
-    }),
-    plugins: [new CamelCasePlugin({ upperCase: true })],
-});
-```
-
-### Type Generation
-
-Kysely requires you to define the types for your database schema. You can define these manually or you can generate them using the `generate` function.
+To get the most out of Kysely, you need to define types for your database schema. You can define these manually or you can generate them using the `generate` function.
 
 ```typescript
 import oracledb from "oracledb";
 import { generate } from "kysely-oracledb";
 
+const pool = await oracledb.createPool({
+    user: "username",
+    password: "password",
+    connectionString: "localhost:1521/FREEPDB1",
+});
+
 await generate({
-    pool: await oracledb.createPool({
-        user: "user",
-        password: "pass",
-        connectionString: "connection-string",
-    }),
+    pool,
+    introspectorOptions: {
+        type: "tables",
+        tables: ["ITEMS"],
+    },
 });
 ```
 
 This will generate a types file with the following structure:
 
 ```typescript
-import type { Insertable, Selectable, Updateable } from "kysely";
+import type { Insertable, Selectable, Updateable, Generated } from "kysely";
 
-interface UserTable {
-    id: number;
-    name: string;
+interface ItemsTable {
+    ID: Generated<number>;
+    NAME: string;
+    AMOUNT: number;
 }
 
-export type User = Selectable<UserTable>;
-export type NewUser = Insertable<UserTable>;
-export type UserUpdate = Updateable<UserTable>;
+export type Items = Selectable<ItemsTable>;
+export type NewItems = Insertable<ItemsTable>;
+export type ItemsUpdate = Updateable<ItemsTable>;
 
 export interface DB {
-    user: UserTable;
+    ITEMS: ItemsTable;
 }
 ```
 
-### Generator Configuration
+## Generator Configuration
 
 The generator can be configured with the same options as the dialect, plus the following additional options:
 
-| Option                    | Type               | Description                                                         | Required |
-| ------------------------- | ------------------ | ------------------------------------------------------------------- | -------- |
-| `type`                    | `string`           | Type of generation to perform.                                      | No       |
-| `schemas`                 | `string[]`         | List of schemas to scope type generation.                           | No       |
-| `tables`                  | `string[]`         | List of tables to scope type generation.                            | No       |
-| `views`                   | `string[]`         | List of views to scope type generation.                             | No       |
-| `camelCase`               | `boolean`          | Convert database table names and columns to camel case.             | No       |
-| `checkDiff`               | `boolean`          | Check for differences against existing types before generating.     | No       |
-| `metadata`                | `boolean`          | Generate table metadata json file.                                  | No       |
-| `underscoreLeadingDigits` | `boolean`          | Retain underscores in leading digits when converting to camel case. | No       |
-| `filePath`                | `string`           | File path to write the types to.                                    | No       |
-| `metadataFilePath`        | `string`           | File path to write the metadata (json) to.                          | No       |
-| `prettierOptions`         | `prettier.Options` | Prettier options for formatting.                                    | No       |
+| Option                    | Type               | Description                                                             |
+| ------------------------- | ------------------ | ----------------------------------------------------------------------- |
+| `camelCase`               | `boolean`          | Convert database table names and columns to camel case.                 |
+| `checkDiff`               | `boolean`          | Check for differences against existing types before generating.         |
+| `metadata`                | `boolean`          | Generate table metadata json file.                                      |
+| `underscoreLeadingDigits` | `boolean`          | Retain underscores in leading digits when converting to camel case.     |
+| `filePath`                | `string`           | File path to write the types to. Defaults to current working directory. |
+| `metadataFilePath`        | `string`           | File path to write the metadata (json) to.                              |
+| `prettierOptions`         | `prettier.Options` | Prettier options for formatting.                                        |
 
-By default only table types are generated. You can also generate view types by setting the `type` option to `"view"`, or both table and view types by setting the `type` option to `"all"`.
+## Plugins
 
-By default the types will be written to `types.ts` in the current working directory. You can change this with the `filePath` option:
+### `WithExecuteOptions`
 
-```typescript
-import path from "path";
-import oracledb from "oracledb";
-import { fileURLToPath } from "url";
-import { generate } from "kysely-oracledb";
-
-await generate({
-    pool: await oracledb.createPool({
-        user: "user",
-        password: "pass",
-        connectionString: "connection-string",
-    }),
-    generator: {
-        filePath: path.join(
-            path.dirname(fileURLToPath(import.meta.url)),
-            "db-types.ts",
-        ),
-    },
-});
-```
-
-### Plugins
-
-There is a plugin available `withExecuteOptions` that allows you to modify `oracledb.ExecuteOptions` for specific queries:
+This plugin allows you to modify the `executeOptions` for a specific query. This takes priority over global execute options set in the dialect.
 
 ```typescript
 import { withExecuteOptions } from "kysely-oracledb";
 
-const users = await db
-    .from("users")
-    .select("id", "name")
-    .where("id", 1)
-    .withPlugin(withExecuteOptions({ outFormat: oracledb.OUT_FORMAT_ARRAY }))
+await db
+    .insertInto("ITEMS")
+    .values({ NAME: "New item", amount: 9.99 })
+    .withPlugin(withExecuteOptions({ autoCommit: true }))
     .execute();
 ```
 
