@@ -2,7 +2,6 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
     test: {
-        root: "src",
         reporters: ["default"],
         env: {
             TZ: "UTC",
@@ -10,8 +9,8 @@ export default defineConfig({
         coverage: {
             provider: "istanbul",
             reporter: ["lcov", "html", "text"],
-            reportsDirectory: "../coverage",
-            include: ["**/*.ts"],
+            reportsDirectory: "coverage",
+            include: ["src/**/*.ts"],
             exclude: ["**/tests/**", "**/*.d.ts"],
         },
         projects: [
@@ -19,15 +18,15 @@ export default defineConfig({
                 extends: true,
                 test: {
                     name: "unit",
-                    include: ["tests/unit/**/*.test.ts"],
+                    include: ["src/tests/unit/**/*.test.ts"],
                 },
             },
             {
                 extends: true,
                 test: {
                     name: "integration",
-                    include: ["tests/integration/**/*.test.ts"],
-                    setupFiles: ["tests/integration/fixtures/setup.ts"],
+                    include: ["src/tests/integration/**/*.test.ts"],
+                    setupFiles: ["src/tests/integration/fixtures/setup.ts"],
                 },
             },
         ],
