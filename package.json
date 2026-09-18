@@ -65,8 +65,5 @@
     "peerDependencies": {
         "kysely": "~0.29.0",
         "oracledb": "^6.7.1"
-    },
-    "optionalDependencies": {
-        "prettier": "^3.4.2"
     }
 }

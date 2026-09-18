@@ -132,7 +132,10 @@ await generate({
 This will generate a types file with the following structure:
 
 ```typescript
-import type { Insertable, Selectable, Updateable, Generated } from "kysely";
+// This file was generated automatically. Please don't edit it manually!
+// kysely-oracledb:8214f7e2928d5c6f
+
+import type { Generated, Insertable, Selectable, Updateable } from "kysely";
 
 interface ItemsTable {
     ID: Generated<number>;
@@ -149,19 +152,71 @@ export interface DB {
 }
 ```
 
+### Change Detection
+
+The generated types file contains a unique fingerprint `kysely-oracledb:<fingerprint>`. Subsequent type generation runs compare fingerprints to determine if there are any changes.
+
+> Manual file edits are not detected when comparing changes, therefore the types should not be modified once generated.
+
+The `changed` flag to indicates if there are any changes to the types. Metadata is always updated regardless of whether the types file is updated or not.
+
 ## Generator Configuration
 
 The generator can be configured with the same options as the dialect, plus the following additional options:
 
-| Option                    | Type               | Description                                                             |
-| ------------------------- | ------------------ | ----------------------------------------------------------------------- |
-| `camelCase`               | `boolean`          | Convert database table names and columns to camel case.                 |
-| `checkDiff`               | `boolean`          | Check for differences against existing types before generating.         |
-| `metadata`                | `boolean`          | Generate table metadata json file.                                      |
-| `underscoreLeadingDigits` | `boolean`          | Retain underscores in leading digits when converting to camel case.     |
-| `filePath`                | `string`           | File path to write the types to. Defaults to current working directory. |
-| `metadataFilePath`        | `string`           | File path to write the metadata (json) to.                              |
-| `prettierOptions`         | `prettier.Options` | Prettier options for formatting.                                        |
+### `camelCase`
+
+Convert database table names and column names to camel case.
+
+Default: `false`.
+
+### `camelCaseOptions`
+
+The same options used for the `CamelCasePlugin`. These options are used to detect columns whose camelized name can't be converted back safely.
+
+For example, `ISO_2CHAR_CODE` is camelized to `iso2charCode`, but converts back to `ISO2CHAR_CODE` when `underscoreBeforeDigits` is disabled. If your schema also contains table columns with trailing digits then this creates a scenario where some columns can't be safely converted.
+
+```typescript
+await generate({
+    pool,
+    camelCase: true,
+    camelCaseOptions: { underscoreBeforeDigits: false },
+});
+
+// Output: Unsafe columns detected with the current camelCase options: ISO_2CHAR_CODE (iso2charCode)
+```
+
+See [`CamelCaseOverridesPlugin`](#camelcaseoverridesplugin) for handling unsafe columns at runtime.
+
+### `metadata`
+
+Output the table metadata to a file.
+
+Default: `false`.
+
+### `filePath`
+
+File path to write the types to. Can be an absolute path, or relative to the current working directory. missing directories are created.
+
+```typescript
+await generate({ pool, filePath: "./src/db/types.ts" });
+```
+
+Default: `types.ts`.
+
+### `metadataFilePath`
+
+File path to write the metadata to. Can be an absolute path, or relative to the current working directory. missing directories are created.
+
+```typescript
+await generate({
+    pool,
+    metadata: true,
+    metadataFilePath: "./src/metadata/tables.json",
+});
+```
+
+Default: `metadata.json`.
 
 ## Plugins
 
@@ -178,6 +233,26 @@ await db
     .withPlugin(withExecuteOptions({ autoCommit: true }))
     .execute();
 ```
+
+### `CamelCaseOverridesPlugin`
+
+An extension to the `CamelCasePlugin` that accepts overrides for columns who's camelized name can't be converted back safely.
+
+```typescript
+import { CamelCaseOverridesPlugin } from "kysely-oracledb";
+
+const db = new Kysely<DB>({
+    dialect: new OracleDialect({ pool }),
+    plugins: [
+        new CamelCaseOverridesPlugin(
+            { iso2charCode: "ISO_2CHAR_CODE" },
+            { upperCase: true },
+        ),
+    ],
+});
+```
+
+Each override maps the affected camelized property name to its real column (or table) name.
 
 ## Contributing
 

@@ -12,6 +12,7 @@ declare module "vitest" {
         db: Kysely<DB>;
         testId: string;
         getPool: () => oracledb.Pool;
+        createPool: () => Promise<oracledb.Pool>;
     }
 }
 
@@ -126,6 +127,12 @@ beforeEach(async (context) => {
             .toUpperCase();
 
     context.getPool = () => oracledb.getPool(userId);
+    context.createPool = () =>
+        oracledb.createPool({
+            user: userId,
+            password: "oracle",
+            connectionString: "localhost:1521/FREEPDB1",
+        });
     context.db = await createDatabase(userId);
     context.testId = userId;
 

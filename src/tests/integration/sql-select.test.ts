@@ -1,6 +1,7 @@
 import { CamelCasePlugin, Kysely, ParseJSONResultsPlugin } from "kysely";
 import { describe, expect, it } from "vitest";
 import { OracleDialect } from "../../dialect/dialect";
+import { CamelCaseOverridesPlugin } from "../../plugins/camel-case-overrides";
 import { DB as CamelCaseDB } from "./fixtures/types-camel-case";
 import { DB } from "./fixtures/types-snake-case";
 
@@ -200,6 +201,33 @@ describe("select", () => {
             id: 1,
             name: "TestItem",
             code: "A",
+        });
+    });
+
+    it("should format query with the camel case overrides plugin", async (context) => {
+        await context.db.schema.alterTable("ITEMS").addColumn("LEADING_1DIGIT", "char(1)").execute();
+
+        await context.db.insertInto("ITEMS").values({ NAME: "TestItem" }).executeTakeFirst();
+
+        const db = new Kysely<CamelCaseDB>({
+            dialect: new OracleDialect({
+                pool: context.getPool(),
+            }),
+            plugins: [new CamelCaseOverridesPlugin({ leading1digit: "LEADING_1DIGIT" }, { upperCase: true })],
+        });
+
+        const row = await db
+            .selectFrom("items")
+            .select(["id", "name", "code", "leading1digit" as any])
+            .where("name", "=", "TestItem")
+            .where("code", "=", "A")
+            .executeTakeFirst();
+
+        expect(row).toEqual({
+            id: 1,
+            name: "TestItem",
+            code: "A",
+            leading1digit: null,
         });
     });
 

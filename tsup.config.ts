@@ -7,5 +7,5 @@ export default defineConfig({
     entry: ["./src/index.ts"],
     format: ["esm", "cjs"],
     outDir: "dist",
-    external: ["oracledb", "kysely", "prettier"],
+    external: ["oracledb", "kysely"],
 });
