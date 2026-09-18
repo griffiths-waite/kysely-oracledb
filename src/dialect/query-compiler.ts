@@ -1,8 +1,13 @@
 import {
+    AddColumnNode,
     AliasNode,
+    AlterColumnNode,
     CompiledQuery,
     DefaultQueryCompiler,
+    DropColumnNode,
+    DropConstraintNode,
     FetchNode,
+    ModifyColumnNode,
     OffsetNode,
     QueryId,
     RootOperationNode,
@@ -69,6 +74,59 @@ export class OracleQueryCompiler extends DefaultQueryCompiler {
         this.append("fetch first ");
         this.visitNode(node.rowCount);
         this.append(" rows only");
+    }
+
+    protected override visitAddColumn(node: AddColumnNode): void {
+        this.append("add ");
+        this.visitNode(node.column);
+    }
+
+    protected override visitModifyColumn(node: ModifyColumnNode): void {
+        this.append("modify ");
+        this.visitNode(node.column);
+    }
+
+    protected override visitAlterColumn(node: AlterColumnNode): void {
+        this.append("modify ");
+        this.visitNode(node.column);
+        this.append(" ");
+
+        if (node.dataType) {
+            this.visitNode(node.dataType);
+        }
+
+        if (node.setDefault) {
+            this.append("default ");
+            this.visitNode(node.setDefault);
+        }
+
+        if (node.dropDefault) {
+            this.append("default null");
+        }
+
+        if (node.setNotNull) {
+            this.append("not null");
+        }
+
+        if (node.dropNotNull) {
+            this.append("null");
+        }
+    }
+
+    protected override visitDropColumn(node: DropColumnNode): void {
+        if (node.ifExists) {
+            throw new Error("Drop column with `if exists` is not supported by Oracle.");
+        }
+
+        super.visitDropColumn(node);
+    }
+
+    protected override visitDropConstraint(node: DropConstraintNode): void {
+        if (node.ifExists) {
+            throw new Error("Drop constraint with `if exists` is not supported by Oracle.");
+        }
+
+        super.visitDropConstraint(node);
     }
 
     compileQuery(node: RootOperationNode, queryId: QueryId): OracleCompiledQuery {

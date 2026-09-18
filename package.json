@@ -42,19 +42,25 @@
     "scripts": {
         "build": "tsup",
         "lint": "tsc",
-        "test": "vitest --coverage",
+        "test": "pnpm db:start && vitest",
+        "test:unit": "vitest --project unit",
+        "test:integration": "pnpm db:start && vitest --project integration",
+        "test:ci": "pnpm db:start && pnpm db:start && vitest --run && pnpm db:stop",
         "release": "pnpm build && changeset publish",
-        "dev": "pnpm lint && node dist/dev.js"
+        "db:start": "docker compose -f ./docker-compose.yaml up -d --wait",
+        "db:stop": "docker compose -f ./docker-compose.yaml down"
     },
     "devDependencies": {
         "@changesets/cli": "^2.27.12",
         "@types/node": "^24.13.4",
         "@types/oracledb": "^6.5.3",
-        "@vitest/coverage-istanbul": "3.0.5",
+        "@vitest/coverage-istanbul": "5.0.0",
         "kysely": "^0.29.5",
+        "oracledb": "^6.8.0",
         "tsup": "^8.3.6",
         "typescript": "^5.7.3",
-        "vitest": "^3.0.5"
+        "vite": "^8.3.0",
+        "vitest": "^5.0.0"
     },
     "peerDependencies": {
         "kysely": "~0.29.0",
