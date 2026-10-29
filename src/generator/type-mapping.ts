@@ -1,4 +1,5 @@
 import { ColumnMetadata } from "kysely";
+import oracledb from "oracledb";
 
 export interface TypeImport {
     module: string;
@@ -14,56 +15,61 @@ export interface TypeMappingOptions {
     intervalSupport: boolean;
 }
 
-const typeMap: Record<string, string> = {
-    BFILE: "string",
-    BINARY_DOUBLE: "number",
-    BINARY_FLOAT: "number",
-    BINARY_INTEGER: "number",
-    BLOB: "string",
-    "PL/SQL BOOLEAN": "boolean",
-    CHAR: "string",
-    CLOB: "string",
-    SYS_REFCURSOR: "string",
-    DATE: "Date",
-    FLOAT: "number",
-    JSON: "string",
-    LONG: "string",
-    "LONG RAW": "string",
-    NCHAR: "string",
-    NCLOB: "string",
-    NUMBER: "number",
-    NVARCHAR2: "string",
-    OBJECT: "string",
-    RAW: "string",
-    ROWID: "string",
-    TIMESTAMP: "Date",
-    VARCHAR2: "string",
-    XMLTYPE: "string",
-    VECTOR: "string",
-};
+const plain = (text: string): MappedType => ({ text, imports: [] });
+
+const typeMap = new Map<string, MappedType>([
+    [oracledb.DB_TYPE_VARCHAR.columnTypeName, plain("string")],
+    [oracledb.DB_TYPE_NVARCHAR.columnTypeName, plain("string")],
+    [oracledb.DB_TYPE_CHAR.columnTypeName, plain("string")],
+    [oracledb.DB_TYPE_NCHAR.columnTypeName, plain("string")],
+    [oracledb.DB_TYPE_LONG.columnTypeName, plain("string")],
+    [oracledb.DB_TYPE_CLOB.columnTypeName, plain("string")],
+    [oracledb.DB_TYPE_NCLOB.columnTypeName, plain("string")],
+    [oracledb.DB_TYPE_ROWID.columnTypeName, plain("string")],
+    [oracledb.DB_TYPE_XMLTYPE.columnTypeName, plain("string")],
+    ["UROWID", plain("string")],
+
+    [oracledb.DB_TYPE_NUMBER.columnTypeName, plain("number")],
+    [oracledb.DB_TYPE_BINARY_FLOAT.columnTypeName, plain("number")],
+    [oracledb.DB_TYPE_BINARY_DOUBLE.columnTypeName, plain("number")],
+    ["FLOAT", plain("number")],
+
+    [oracledb.DB_TYPE_BOOLEAN.columnTypeName, plain("boolean")],
+
+    [oracledb.DB_TYPE_DATE.columnTypeName, plain("Date")],
+    [oracledb.DB_TYPE_TIMESTAMP.columnTypeName, plain("Date")],
+    [oracledb.DB_TYPE_TIMESTAMP_TZ.columnTypeName, plain("Date")],
+    [oracledb.DB_TYPE_TIMESTAMP_LTZ.columnTypeName, plain("Date")],
+
+    [oracledb.DB_TYPE_BLOB.columnTypeName, plain("Buffer")],
+    [oracledb.DB_TYPE_RAW.columnTypeName, plain("Buffer")],
+    [oracledb.DB_TYPE_LONG_RAW.columnTypeName, plain("Buffer")],
+
+    [oracledb.DB_TYPE_VECTOR.columnTypeName, plain("Float32Array | Float64Array | Int8Array | Uint8Array")],
+]);
+
+const stripParameters = (dataType: string): string => dataType.replace(/\(\s*\d+\s*(?:,\s*\d+\s*)?\)/g, "");
 
 const mapDataType = (dataType: string, options: TypeMappingOptions): MappedType => {
-    if (typeMap[dataType]) {
-        return { text: typeMap[dataType], imports: [] };
+    const name = stripParameters(dataType);
+
+    const mapped = typeMap.get(name);
+
+    if (mapped) {
+        return mapped;
     }
 
-    if (dataType.startsWith("TIMESTAMP")) {
-        return { text: "Date", imports: [] };
+    if (options.intervalSupport) {
+        if (name === oracledb.DB_TYPE_INTERVAL_YM.columnTypeName) {
+            return { text: "IntervalYM", imports: [{ module: "oracledb", name: "IntervalYM" }] };
+        }
+
+        if (name === oracledb.DB_TYPE_INTERVAL_DS.columnTypeName) {
+            return { text: "IntervalDS", imports: [{ module: "oracledb", name: "IntervalDS" }] };
+        }
     }
 
-    if (dataType.startsWith("INTERVAL YEAR")) {
-        return options.intervalSupport
-            ? { text: "IntervalYM", imports: [{ module: "oracledb", name: "IntervalYM" }] }
-            : { text: "unknown", imports: [] };
-    }
-
-    if (dataType.startsWith("INTERVAL DAY")) {
-        return options.intervalSupport
-            ? { text: "IntervalDS", imports: [{ module: "oracledb", name: "IntervalDS" }] }
-            : { text: "unknown", imports: [] };
-    }
-
-    return { text: "unknown", imports: [] };
+    return plain("unknown");
 };
 
 export const mapColumnType = (column: ColumnMetadata, options: TypeMappingOptions): MappedType => {

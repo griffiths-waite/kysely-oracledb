@@ -152,6 +152,27 @@ export interface DB {
 }
 ```
 
+### Type Mapping
+
+| Oracle type                                                                                     | TypeScript                                                |
+| ----------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| `VARCHAR2`, `NVARCHAR2`, `CHAR`, `NCHAR`, `LONG`, `ROWID`, `UROWID`, `XMLTYPE`, `ClOB`, `NCLOB` | `string`                                                  |
+| `NUMBER`, `FLOAT`, `BINARY_FLOAT`, `BINARY_DOUBLE`                                              | `number`                                                  |
+| `BOOLEAN`                                                                                       | `boolean`                                                 |
+| `DATE`, `TIMESTAMP`, `TIMESTAMP WITH TIME ZONE`, `TIMESTAMP WITH LOCAL TIME ZONE`               | `Date`                                                    |
+| `RAW`, `LONG RAW`, `BLOB`                                                                       | `Buffer`                                                  |
+| `VECTOR`                                                                                        | `Float32Array \| Float64Array \| Int8Array \| Uint8Array` |
+| `INTERVAL YEAR TO MONTH`                                                                        | `IntervalYM`                                              |
+| `INTERVAL DAY TO SECOND`                                                                        | `IntervalDS`                                              |
+| `JSON`, `BFILE`                                                                                 | `unknown`                                                 |
+
+By default node-oracledb returns LOB columns as `Lob` streams. To receive the types above, configure the driver:
+
+```typescript
+oracledb.fetchAsString = [oracledb.CLOB, oracledb.NCLOB];
+oracledb.fetchAsBuffer = [oracledb.BLOB];
+```
+
 ### Change Detection
 
 The generated types file contains a unique fingerprint `kysely-oracledb:<fingerprint>`. Subsequent type generation runs compare fingerprints to determine if there are any changes.
