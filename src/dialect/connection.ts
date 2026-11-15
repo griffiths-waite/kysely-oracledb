@@ -1,7 +1,7 @@
 import { CompiledQuery, DatabaseConnection, QueryResult } from "kysely";
-import oracledb, { Connection, ExecuteOptions } from "oracledb";
+import oracledb, { Connection, ExecuteOptions, Result } from "oracledb";
 import { isIntervalSupported } from "../features.js";
-import { Logger } from "./logger.js";
+import { OracleLog } from "./logger.js";
 import { OracleCompiledQuery } from "./query-compiler.js";
 
 export interface OracleQueryResult<R = unknown> extends QueryResult<R> {
@@ -12,19 +12,19 @@ export class OracleConnection implements DatabaseConnection {
     #executeOptions: ExecuteOptions;
     #connection: Connection;
     #identifier: string;
-    #log: Logger;
+    #log: OracleLog;
 
     #isTransactionActive = false;
 
-    constructor(connection: Connection, logger: Logger, executeOptions?: ExecuteOptions) {
+    constructor(connection: Connection, log: OracleLog, executeOptions?: ExecuteOptions) {
         this.#executeOptions = executeOptions || {};
         this.#connection = connection;
-        this.#log = logger;
+        this.#log = log;
         this.#identifier = crypto.randomUUID();
     }
 
     async executeQuery<R>(compiledQuery: OracleCompiledQuery): Promise<OracleQueryResult<R>> {
-        const startTime = new Date();
+        const startTime = performance.now();
 
         const executeOptions = {
             outFormat: oracledb.OUT_FORMAT_OBJECT,
@@ -38,33 +38,34 @@ export class OracleConnection implements DatabaseConnection {
 
         const { sql, bindParams } = this.formatQuery(compiledQuery);
 
-        this.#log.debug({ sql: this.formatQueryForLogging(compiledQuery), id: this.#identifier }, "Executing query");
+        let result: Result<R>;
 
         try {
-            const result = await this.#connection.execute<R>(sql, bindParams, executeOptions);
+            result = await this.#connection.execute<R>(sql, bindParams, executeOptions);
+        } catch (error) {
+            await this.#log.log("error", () => ({
+                level: "error",
+                connectionId: this.#identifier,
+                error,
+                query: compiledQuery,
+                queryDurationMillis: performance.now() - startTime,
+            }));
 
-            const endTime = new Date();
-
-            this.#log.debug(
-                { durationMs: endTime.getTime() - startTime.getTime(), id: this.#identifier },
-                "Execution complete",
-            );
-
-            return {
-                rows: result?.rows || [],
-                numAffectedRows: result.rowsAffected ? BigInt(result.rowsAffected) : undefined,
-                outBinds: result.outBinds,
-            };
-        } catch (err) {
-            const endTime = new Date();
-
-            this.#log.error(
-                { err, durationMs: endTime.getTime() - startTime.getTime(), id: this.#identifier },
-                "Error executing query",
-            );
-
-            throw err;
+            throw error;
         }
+
+        await this.#log.log("query", () => ({
+            level: "query",
+            connectionId: this.#identifier,
+            query: compiledQuery,
+            queryDurationMillis: performance.now() - startTime,
+        }));
+
+        return {
+            rows: result?.rows || [],
+            numAffectedRows: result.rowsAffected ? BigInt(result.rowsAffected) : undefined,
+            outBinds: result.outBinds,
+        };
     }
 
     formatQuery(query: CompiledQuery) {
@@ -90,33 +91,6 @@ export class OracleConnection implements DatabaseConnection {
             };
         }
         return param;
-    }
-
-    formatQueryForLogging(query: CompiledQuery) {
-        return query.sql.replace(/\:(\d+)/g, (_match, p1) => {
-            const index = parseInt(p1, 10);
-            const param = query.parameters[index - 1];
-
-            if (param === null || param === undefined) {
-                return "null";
-            }
-
-            if (param instanceof Date) {
-                const isoString = param.toISOString().replace("Z", "");
-                const [date, time] = isoString.split("T");
-                const [timeWithoutMs, ms] = time.split(".");
-
-                return ms && ms !== "000"
-                    ? `TO_TIMESTAMP('${date} ${time}', 'YYYY-MM-DD HH24:MI:SS.FF3')`
-                    : `TO_DATE('${date} ${timeWithoutMs}', 'YYYY-MM-DD HH24:MI:SS')`;
-            }
-
-            if (typeof param === "string") {
-                return `'${param}'`;
-            }
-
-            return param.toString();
-        });
     }
 
     streamQuery<R>(_compiledQuery: CompiledQuery): AsyncIterableIterator<QueryResult<R>> {

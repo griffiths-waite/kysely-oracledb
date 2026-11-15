@@ -3,7 +3,6 @@ import { CamelCasePluginOptions, Kysely, TableMetadata } from "kysely";
 import path from "path";
 import { isDeepStrictEqual } from "util";
 import { OracleDialect, OracleDialectConfig } from "../dialect/dialect.js";
-import { defaultLogger } from "../dialect/logger.js";
 import { isIntervalSupported } from "../features.js";
 import { isConversionSafe } from "./camel-case.js";
 import { toFieldName } from "./naming.js";
@@ -18,7 +17,23 @@ export interface GenerateTypesOptions {
     camelCase?: boolean;
 }
 
+export interface GeneratorLogger {
+    info(message: string): void;
+    warn(message: string): void;
+}
+
+const defaultGeneratorLogger: GeneratorLogger = {
+    info: (message) => console.log(message),
+    warn: (message) => console.warn(message),
+};
+
 export interface GeneratorConfig extends OracleDialectConfig, GenerateTypesOptions {
+    /**
+     * Logger for generator messages, e.g. the result summary and unsafe column warnings.
+     *
+     * @default console
+     */
+    logger?: GeneratorLogger;
     /**
      * Output the raw database table metadata.
      *
@@ -123,7 +138,7 @@ export const findUnsafeColumns = (tables: TableMetadata[], options: CamelCasePlu
  * Generate types using database introspection.
  */
 export const generate = async (config: GeneratorConfig): Promise<GenerateResult> => {
-    const log = config.logger ?? defaultLogger;
+    const log = config.logger ?? defaultGeneratorLogger;
     const write = config.write ?? true;
 
     const typesFilePath = path.resolve(config.filePath ?? DEFAULT_TYPES_FILE);
