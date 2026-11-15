@@ -9,41 +9,41 @@ const withColumns = (...columns: ColumnMetadata[]) => [table("ITEMS", columns)];
 describe("generateTypes", () => {
     describe("data types", () => {
         it.each([
-            ["BFILE", "string"],
-            ["BINARY_DOUBLE", "number"],
-            ["BINARY_FLOAT", "number"],
-            ["BINARY_INTEGER", "number"],
-            ["BLOB", "string"],
-            ["PL/SQL BOOLEAN", "boolean"],
-            ["CHAR", "string"],
-            ["CLOB", "string"],
-            ["SYS_REFCURSOR", "string"],
-            ["DATE", "Date"],
-            ["FLOAT", "number"],
-            ["JSON", "string"],
-            ["LONG", "string"],
-            ["LONG RAW", "string"],
-            ["NCHAR", "string"],
-            ["NCLOB", "string"],
-            ["NUMBER", "number"],
-            ["NVARCHAR2", "string"],
-            ["OBJECT", "string"],
-            ["RAW", "string"],
-            ["ROWID", "string"],
-            ["TIMESTAMP", "Date"],
             ["VARCHAR2", "string"],
+            ["NVARCHAR2", "string"],
+            ["CHAR", "string"],
+            ["NCHAR", "string"],
+            ["LONG", "string"],
+            ["CLOB", "string"],
+            ["NCLOB", "string"],
+            ["ROWID", "string"],
+            ["UROWID", "string"],
             ["XMLTYPE", "string"],
-            ["VECTOR", "string"],
+            ["NUMBER", "number"],
+            ["FLOAT", "number"],
+            ["BINARY_FLOAT", "number"],
+            ["BINARY_DOUBLE", "number"],
+            ["BOOLEAN", "boolean"],
+            ["DATE", "Date"],
+            ["TIMESTAMP(6)", "Date"],
+            ["TIMESTAMP(6) WITH TIME ZONE", "Date"],
+            ["TIMESTAMP(6) WITH LOCAL TIME ZONE", "Date"],
+            ["BLOB", "Buffer"],
+            ["RAW", "Buffer"],
+            ["LONG RAW", "Buffer"],
+            ["VECTOR", "Float32Array | Float64Array | Int8Array | Uint8Array"],
+            ["JSON", "unknown"],
+            ["BFILE", "unknown"],
         ])("should map %s to %s", (dataType, expected) => {
             const types = generateTypes(withColumns(column("COL", dataType)));
 
             expect(types).toContain(`COL: ${expected};`);
         });
 
-        it.each(["TIMESTAMP(6)", "TIMESTAMP WITH TIME ZONE", "TIMESTAMP(6) WITH LOCAL TIME ZONE"])(
-            "should map %s to Date",
+        it.each(["BINARY_INTEGER", "SYS_REFCURSOR", "PL/SQL BOOLEAN", "OBJECT", "MY_OBJECT_TYPE", "constructor"])(
+            "should map %s to unknown",
             (dataType) => {
-                expect(generateTypes(withColumns(column("COL", dataType)))).toContain("COL: Date;");
+                expect(generateTypes(withColumns(column("COL", dataType)))).toContain("COL: unknown;");
             },
         );
 
