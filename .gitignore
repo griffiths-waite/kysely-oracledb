@@ -2,6 +2,4 @@ coverage
 node_modules
 dist
 .env
-types.dev.ts
-src/dev.ts
-tables.dev.json
+tmp*

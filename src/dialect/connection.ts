@@ -1,6 +1,6 @@
 import { CompiledQuery, DatabaseConnection, QueryResult } from "kysely";
 import oracledb, { Connection, ExecuteOptions } from "oracledb";
-import { isIntervalSupported } from "../generator/map.js";
+import { isIntervalSupported } from "../features.js";
 import { Logger } from "./logger.js";
 import { OracleCompiledQuery } from "./query-compiler.js";
 
@@ -14,6 +14,8 @@ export class OracleConnection implements DatabaseConnection {
     #identifier: string;
     #log: Logger;
 
+    #isTransactionActive = false;
+
     constructor(connection: Connection, logger: Logger, executeOptions?: ExecuteOptions) {
         this.#executeOptions = executeOptions || {};
         this.#connection = connection;
@@ -24,16 +26,22 @@ export class OracleConnection implements DatabaseConnection {
     async executeQuery<R>(compiledQuery: OracleCompiledQuery): Promise<OracleQueryResult<R>> {
         const startTime = new Date();
 
+        const executeOptions = {
+            outFormat: oracledb.OUT_FORMAT_OBJECT,
+            ...this.#executeOptions,
+            ...compiledQuery.executeOptions,
+        };
+
+        if (this.#isTransactionActive) {
+            executeOptions.autoCommit = false;
+        }
+
         const { sql, bindParams } = this.formatQuery(compiledQuery);
 
         this.#log.debug({ sql: this.formatQueryForLogging(compiledQuery), id: this.#identifier }, "Executing query");
 
         try {
-            const result = await this.#connection.execute<R>(sql, bindParams, {
-                outFormat: oracledb.OUT_FORMAT_OBJECT,
-                ...this.#executeOptions,
-                ...compiledQuery.executeOptions,
-            });
+            const result = await this.#connection.execute<R>(sql, bindParams, executeOptions);
 
             const endTime = new Date();
 
@@ -67,14 +75,14 @@ export class OracleConnection implements DatabaseConnection {
     }
 
     formatBindParam(param: unknown) {
-        if (isIntervalSupported && param instanceof oracledb.IntervalYM) {
+        if (isIntervalSupported() && param instanceof oracledb.IntervalYM) {
             return {
                 dir: oracledb.BIND_IN,
                 type: oracledb.DB_TYPE_INTERVAL_YM,
                 val: param,
             };
         }
-        if (isIntervalSupported && param instanceof oracledb.IntervalDS) {
+        if (isIntervalSupported() && param instanceof oracledb.IntervalDS) {
             return {
                 dir: oracledb.BIND_IN,
                 type: oracledb.DB_TYPE_INTERVAL_DS,
@@ -121,5 +129,13 @@ export class OracleConnection implements DatabaseConnection {
 
     get connection(): Connection {
         return this.#connection;
+    }
+
+    beginTransaction(): void {
+        this.#isTransactionActive = true;
+    }
+
+    endTransaction(): void {
+        this.#isTransactionActive = false;
     }
 }
