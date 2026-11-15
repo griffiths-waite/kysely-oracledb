@@ -38,6 +38,7 @@ const createDatabase = async (userId?: string) => {
             executeOptions: {
                 autoCommit: true,
             },
+            log: ["query"],
         }),
     });
 };
