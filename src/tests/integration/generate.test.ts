@@ -433,5 +433,45 @@ describe("generate", () => {
             expect(fs.readFileSync(`${tmpDir}/types.ts`, "utf8")).toEqual(before);
             expect(fs.readFileSync(`${tmpDir}/tables.json`, "utf8")).toContain('"dataLength": 500');
         });
+
+        it("should flag metadata as changed only when metadata is enabled", async (context) => {
+            const disabled = await generate(createConfig(context, { pool: await context.createPool() }));
+
+            expect(disabled.metadataChanged).toBe(false);
+
+            const initial = await generate(createConfig(context, { pool: await context.createPool(), metadata: true }));
+
+            expect(initial.metadataChanged).toBe(true);
+
+            const unchanged = await generate(createConfig(context, { pool: await context.createPool(), metadata: true }));
+
+            expect(unchanged.metadataChanged).toBe(false);
+        });
+    });
+
+    describe("write", () => {
+        it("should detect changes without writing files when disabled", async (context) => {
+            const result = await generate(createConfig(context, { metadata: true, write: false }));
+
+            expect(result).toMatchObject({ changed: true, metadataChanged: true });
+            expect(fs.existsSync(`${tmpDir}/types.ts`)).toBe(false);
+            expect(fs.existsSync(`${tmpDir}/tables.json`)).toBe(false);
+        });
+
+        it("should not modify existing files when disabled", async (context) => {
+            await generate(createConfig(context, { pool: await context.createPool() }));
+
+            await context.db.schema
+                .alterTable("ITEMS")
+                .addColumn("EXTRA", sql`varchar2(10)`)
+                .execute();
+
+            const before = fs.readFileSync(`${tmpDir}/types.ts`, "utf8");
+
+            const result = await generate(createConfig(context, { pool: await context.createPool(), write: false }));
+
+            expect(result.changed).toBe(true);
+            expect(fs.readFileSync(`${tmpDir}/types.ts`, "utf8")).toEqual(before);
+        });
     });
 });

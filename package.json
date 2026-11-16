@@ -7,6 +7,9 @@
     "main": "dist/index.cjs",
     "module": "dist/index.js",
     "types": "dist/index.d.cts",
+    "bin": {
+        "kysely-oracledb": "./dist/cli.js"
+    },
     "type": "module",
     "publishConfig": {
         "provenance": true

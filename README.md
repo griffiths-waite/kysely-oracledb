@@ -179,7 +179,55 @@ The generated types file contains a unique fingerprint `kysely-oracledb:<fingerp
 
 > Manual file edits are not detected when comparing changes, therefore the types should not be modified once generated.
 
-The `changed` flag to indicates if there are any changes to the types. Metadata is always updated regardless of whether the types file is updated or not.
+The `changed` flag to indicates if there are any changes to the types. Metadata is always updated regardless of whether the types file is updated or not, and the `metadataChanged` flag indicates if there are any changes to the metadata.
+
+### CLI
+
+The generator can also be run from the command line without writing a script:
+
+```sh
+npx kysely-oracledb generate --user username --connect-string localhost:1521/FREEPDB1 --type tables
+```
+
+Connection options can be passed as flags or environment variables. Flags take priority over environment variables.
+
+Use `--env-file` to load the environment variables from a file. Variables already set in the environment take priority over the file.
+
+```json
+{
+    "scripts": {
+        "db:types": "kysely-oracledb generate --env-file .env -o src/db/types.ts"
+    }
+}
+```
+
+| Flag                                     | Environment variable    | Description                                                                  |
+| ---------------------------------------- | ----------------------- | ---------------------------------------------------------------------------- |
+| `--user`                                 | `ORACLE_USER`           | Database user.                                                               |
+| `--password`                             | `ORACLE_PASSWORD`       | Database password.                                                           |
+| `--connect-string`                       | `ORACLE_CONNECT_STRING` | Connect string, e.g. `localhost:1521/FREEPDB1`.                              |
+| `--env-file`                             |                         | Load environment variables from a file.                                      |
+| `--thick`                                |                         | Enable node-oracledb [thick mode][thick-mode].                               |
+| `--lib-dir`                              |                         | Oracle Client library directory. Implies `--thick`.                          |
+| `--type`                                 |                         | Filter by object type, `tables` or `views`.                                  |
+| `--schemas`                              |                         | Filter by schema name. Comma-separated or repeated.                          |
+| `--tables`                               |                         | Filter by table or view name. Comma-separated or repeated.                   |
+| `-o`, `--out`                            |                         | Types file path. Default: `types.ts`.                                        |
+| `--metadata`                             |                         | Output the table metadata.                                                   |
+| `--metadata-out`                         |                         | Metadata file path. Default: `tables.json`. Implies `--metadata`.            |
+| `--camel-case`                           |                         | Use camelCase for generated types.                                           |
+| `--underscore-before-digits`             |                         | `CamelCasePlugin` option used to detect [unsafe columns](#camelcaseoptions). |
+| `--underscore-between-uppercase-letters` |                         | `CamelCasePlugin` option used to detect [unsafe columns](#camelcaseoptions). |
+| `--check`                                |                         | Check if the generated files are out of date without writing them.           |
+| `--quiet`                                |                         | Only output warnings and errors.                                             |
+
+[thick-mode]: https://node-oracledb.readthedocs.io/en/latest/user_guide/initialization.html#enabling-node-oracledb-thick-mode
+
+Use `--check` in CI to verify that the committed types match the database. The CLI exits with code `1` if the files are out of date, or code `2` for any other error.
+
+```sh
+npx kysely-oracledb generate --env-file .env -o src/db/types.ts --check
+```
 
 ## Generator Configuration
 
@@ -237,7 +285,17 @@ await generate({
 });
 ```
 
-Default: `metadata.json`.
+Default: `tables.json`.
+
+### `write`
+
+Write the generated files. When disabled, files are only compared and the `changed` and `metadataChanged` flags indicate if they are out of date.
+
+```typescript
+const { changed } = await generate({ pool, write: false });
+```
+
+Default: `true`.
 
 ## Plugins
 

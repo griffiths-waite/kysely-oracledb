@@ -44,12 +44,19 @@ export interface GeneratorConfig extends OracleDialectConfig, GenerateTypesOptio
      * @default {}
      */
     camelCaseOptions?: CamelCasePluginOptions;
+    /**
+     * Write the generated files. When disabled, files are only compared to detect changes.
+     *
+     * @default true
+     */
+    write?: boolean;
 }
 
 export interface GenerateResult {
     types: string;
     metadata: TableMetadata[];
     changed: boolean;
+    metadataChanged: boolean;
 }
 
 const DEFAULT_TYPES_FILE = "types.ts";
@@ -117,6 +124,7 @@ export const findUnsafeColumns = (tables: TableMetadata[], options: CamelCasePlu
  */
 export const generate = async (config: GeneratorConfig): Promise<GenerateResult> => {
     const log = config.logger ?? defaultLogger;
+    const write = config.write ?? true;
 
     const typesFilePath = path.resolve(config.filePath ?? DEFAULT_TYPES_FILE);
     const metadataFilePath = path.resolve(config.metadataFilePath ?? DEFAULT_METADATA_FILE);
@@ -137,24 +145,35 @@ export const generate = async (config: GeneratorConfig): Promise<GenerateResult>
     }
 
     const typesChanged = readFingerprint(oldTypes) !== readFingerprint(newTypes);
-    const metadataChanged = compareMetadata(metadataFilePath, metadata);
+    const metadataChanged = config.metadata ? compareMetadata(metadataFilePath, metadata) : false;
 
-    if (typesChanged) {
+    if (write && typesChanged) {
         writeFile(typesFilePath, newTypes);
     }
 
-    if (config.metadata && metadataChanged) {
+    if (write && metadataChanged) {
         writeFile(metadataFilePath, JSON.stringify(metadata, null, 2));
     }
 
-    log.info(
-        [
-            typesChanged ? "Types generated successfully" : "Types have not changed",
-            `tables: ${metadata.length}`,
-            `types: ${typesChanged ? typesFilePath : "skipped"}`,
-            ...(config.metadata ? [`metadata: ${metadataChanged ? metadataFilePath : "skipped"}`] : []),
-        ].join(", "),
-    );
+    if (write) {
+        log.info(
+            [
+                typesChanged ? "Types generated successfully" : "Types have not changed",
+                `tables: ${metadata.length}`,
+                `types: ${typesChanged ? typesFilePath : "skipped"}`,
+                ...(config.metadata ? [`metadata: ${metadataChanged ? metadataFilePath : "skipped"}`] : []),
+            ].join(", "),
+        );
+    } else {
+        log.info(
+            [
+                typesChanged || metadataChanged ? "Generated files are out of date" : "Generated files are up to date",
+                `tables: ${metadata.length}`,
+                `types: ${typesChanged ? "changed" : "unchanged"}`,
+                ...(config.metadata ? [`metadata: ${metadataChanged ? "changed" : "unchanged"}`] : []),
+            ].join(", "),
+        );
+    }
 
-    return { types: newTypes, metadata, changed: typesChanged };
+    return { types: newTypes, metadata, changed: typesChanged, metadataChanged };
 };
