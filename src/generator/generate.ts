@@ -170,25 +170,23 @@ export const generate = async (config: GeneratorConfig): Promise<GenerateResult>
         writeFile(metadataFilePath, JSON.stringify(metadata, null, 2));
     }
 
-    if (write) {
-        log.info(
-            [
-                typesChanged ? "Types generated successfully" : "Types have not changed",
-                `tables: ${metadata.length}`,
-                `types: ${typesChanged ? typesFilePath : "skipped"}`,
-                ...(config.metadata ? [`metadata: ${metadataChanged ? metadataFilePath : "skipped"}`] : []),
-            ].join(", "),
-        );
-    } else {
-        log.info(
-            [
-                typesChanged || metadataChanged ? "Generated files are out of date" : "Generated files are up to date",
-                `tables: ${metadata.length}`,
-                `types: ${typesChanged ? "changed" : "unchanged"}`,
-                ...(config.metadata ? [`metadata: ${metadataChanged ? "changed" : "unchanged"}`] : []),
-            ].join(", "),
-        );
+    const changed = typesChanged || metadataChanged;
+    const summary = !changed
+        ? "Generated files are up to date"
+        : write
+          ? "Generated files updated"
+          : "Generated files are out of date";
+
+    const fileStatus = (changed: boolean, filePath: string) =>
+        write ? (changed ? filePath : "skipped") : changed ? "changed" : "unchanged";
+
+    const details = [`tables: ${metadata.length}`, `types: ${fileStatus(typesChanged, typesFilePath)}`];
+
+    if (config.metadata) {
+        details.push(`metadata: ${fileStatus(metadataChanged, metadataFilePath)}`);
     }
+
+    log.info(`${summary}, ${details.join(", ")}`);
 
     return { types: newTypes, metadata, changed: typesChanged, metadataChanged };
 };

@@ -58,7 +58,7 @@ describe("cli", () => {
     it("should log to stdout unless quiet", async (context) => {
         await run(context);
 
-        expect(console.log).toHaveBeenCalledWith(expect.stringContaining("Types generated successfully"));
+        expect(console.log).toHaveBeenCalledWith(expect.stringContaining("Generated files updated"));
 
         vi.mocked(console.log).mockClear();
 
