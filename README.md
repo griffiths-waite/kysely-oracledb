@@ -49,9 +49,29 @@ Read the [type generation](#type-generation) section for information on generati
 
 ## Dialect Configuration
 
-### `logger`
+### `log`
 
-A logger instance to enable logging for queries, connections, transactions, and errors.
+Enables logging, in the same way as Kysely's `log` option. The levels are:
+
+- `query`: a query completes
+- `error`: a query, commit, rollback or connection close fails
+- `connection`: a connection is acquired or released
+- `transaction`: a transaction begins, commits or rolls back, or a savepoint is created or rolled back to
+
+```typescript
+// Log the given levels to the console
+log: ["query", "error"],
+
+// Send every level to your own function
+log: (event) => logger.debug(event),
+
+// Send the given levels to your own function
+log: { levels: ["query", "error"], logger: (event) => logger.info(formatLogEvent(event)) },
+```
+
+`formatLogEvent` returns the message the console logger would print. Query events hold the SQL and its parameters separately, so parameter values aren't written into the logs.
+
+Kysely's own `log` option also logs queries and errors, so turning on `query` or `error` in both places logs each query twice.
 
 ### `executeOptions`
 
@@ -286,6 +306,16 @@ await generate({
 ```
 
 Default: `tables.json`.
+
+### `logger`
+
+Logger for generator messages, such as the result summary and unsafe column warnings. It needs `info` and `warn` methods, so the console and most logging libraries work as is.
+
+```typescript
+await generate({ pool, logger: { info: () => {}, warn: console.warn } });
+```
+
+Default: `console`.
 
 ### `write`
 

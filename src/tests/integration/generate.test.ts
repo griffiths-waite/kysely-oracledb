@@ -2,7 +2,6 @@ import fs from "fs";
 import { sql } from "kysely";
 import path from "path";
 import { afterEach, beforeEach, describe, expect, it, TestContext, vi } from "vitest";
-import { defaultLogger } from "../../dialect/logger";
 import { generate, GeneratorConfig } from "../../generator/generate";
 
 describe("generate", () => {
@@ -22,6 +21,7 @@ describe("generate", () => {
             introspectorOptions: { schemas: [context.testId], type: "tables" },
             filePath: `${tmpDir}/types.ts`,
             metadataFilePath: `${tmpDir}/tables.json`,
+            logger: { info: vi.fn(), warn: vi.fn() },
             ...config,
         };
     };
@@ -181,7 +181,7 @@ describe("generate", () => {
                     introspectorOptions: { schemas: [context.testId], type: "tables", tables: ["ITEMS"] },
                     camelCase: true,
                     camelCaseOptions: { underscoreBeforeDigits: false },
-                    logger: { ...defaultLogger, warn },
+                    logger: { info: vi.fn(), warn },
                 }),
             );
 
@@ -198,7 +198,7 @@ describe("generate", () => {
                     introspectorOptions: { schemas: [context.testId], type: "tables", tables: ["ITEMS"] },
                     camelCase: true,
                     camelCaseOptions: { underscoreBeforeDigits: true },
-                    logger: { ...defaultLogger, warn },
+                    logger: { info: vi.fn(), warn },
                 }),
             );
 

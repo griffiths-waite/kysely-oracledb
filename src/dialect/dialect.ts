@@ -3,7 +3,7 @@ import { ExecuteOptions, Pool } from "oracledb";
 import { OracleAdapter } from "./adapter.js";
 import { OracleDriver } from "./driver.js";
 import { IntrospectorOptions, OracleIntrospector } from "./introspector.js";
-import { Logger } from "./logger.js";
+import { OracleLogConfig } from "./logger.js";
 import { CompilerOptions, OracleQueryCompiler } from "./query-compiler.js";
 
 export interface OracleDialectConfig {
@@ -11,7 +11,13 @@ export interface OracleDialectConfig {
      * Oracle connection pool.
      */
     pool: Pool;
-    logger?: Logger;
+    /**
+     * Dialect logging. Either a list of levels to log to the console, a function that receives every
+     * log event, or `{ levels, logger }`. Levels: `query`, `error`, `connection` and `transaction`.
+     *
+     * Kysely's own `log` option also logs queries and errors, so enabling both will log them twice.
+     */
+    log?: OracleLogConfig;
     /**
      * Oracle execute options.
      */

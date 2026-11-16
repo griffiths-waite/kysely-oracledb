@@ -1,6 +1,5 @@
 import oracledb from "oracledb";
-import { defaultLogger, Logger } from "../dialect/logger.js";
-import { generate } from "../generator/generate.js";
+import { generate, GeneratorLogger } from "../generator/generate.js";
 import { CliUsageError, GenerateCommand, HELP_TEXT, parseCliArgs } from "./args.js";
 
 export interface RunCliOptions {
@@ -11,12 +10,9 @@ export const EXIT_SUCCESS = 0;
 export const EXIT_OUT_OF_DATE = 1;
 export const EXIT_ERROR = 2;
 
-const createLogger = (quiet: boolean): Logger => ({
-    ...defaultLogger,
-    info: quiet ? defaultLogger.info : console.log,
+const createLogger = (quiet: boolean): GeneratorLogger => ({
+    info: quiet ? () => {} : console.log,
     warn: console.warn,
-    error: console.error,
-    fatal: console.error,
 });
 
 const runGenerate = async (command: GenerateCommand): Promise<number> => {
