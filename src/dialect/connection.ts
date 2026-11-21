@@ -4,8 +4,8 @@ import { isIntervalSupported } from "../features.js";
 import { OracleLog } from "./logger.js";
 import { OracleCompiledQuery } from "./query-compiler.js";
 
-export interface OracleQueryResult<R = unknown> extends QueryResult<R> {
-    outBinds?: R;
+export interface OracleQueryResult<R = unknown, O = unknown> extends QueryResult<R> {
+    outBinds?: O;
 }
 
 export class OracleConnection implements DatabaseConnection {

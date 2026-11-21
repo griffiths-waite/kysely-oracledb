@@ -124,6 +124,20 @@ const items = await db
     .execute();
 ```
 
+Bind objects in the `sql` template tag are passed to node-oracledb unchanged, so you can use [out binds](https://node-oracledb.readthedocs.io/en/latest/user_guide/bind.html#out-and-in-out-bind-parameters), e.g. to call a procedure. The values are returned in `outBinds`, in bind order:
+
+```typescript
+const result = (await sql`
+    begin
+        GET_ITEM_COUNT(${"A"}, ${{ dir: oracledb.BIND_OUT, type: oracledb.NUMBER }});
+    end;
+`.execute(db)) as OracleQueryResult<unknown, [number]>;
+
+const count = result.outBinds?.[0];
+```
+
+To return values from an insert, update or delete, use [`withReturning`](#withreturning) instead.
+
 Read the [official documentation](https://kysely.dev/docs/recipes/extending-kysely) for more information on extending Kysely.
 
 ## Type Generation
