@@ -62,10 +62,29 @@ export class OracleConnection implements DatabaseConnection {
         }));
 
         return {
-            rows: result?.rows || [],
+            rows: compiledQuery.returningColumns
+                ? this.formatReturningRows<R>(compiledQuery.returningColumns, result.outBinds)
+                : result?.rows || [],
             numAffectedRows: result.rowsAffected ? BigInt(result.rowsAffected) : undefined,
             outBinds: result.outBinds,
         };
+    }
+
+    formatReturningRows<R>(columns: string[], outBinds: unknown): R[] {
+        if (!Array.isArray(outBinds) || outBinds.length < columns.length) {
+            throw new Error("Unexpected out binds for `returning ... into`.");
+        }
+
+        const values = outBinds.slice(-columns.length);
+
+        if (!values.every(Array.isArray)) {
+            throw new Error("Unexpected out binds for `returning ... into`.");
+        }
+
+        return (values[0] ?? []).map(
+            (_, rowIndex) =>
+                Object.fromEntries(columns.map((column, columnIndex) => [column, values[columnIndex][rowIndex]])) as R,
+        );
     }
 
     formatQuery(query: CompiledQuery) {

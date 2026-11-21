@@ -10,3 +10,4 @@ export * from "./generator/generate.js";
 
 export * from "./plugins/camel-case-overrides.js";
 export * from "./plugins/with-execute-options.js";
+export * from "./plugins/with-returning.js";
