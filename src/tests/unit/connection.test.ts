@@ -1,6 +1,6 @@
 import oracledb, { Connection } from "oracledb";
-import { afterEach, describe, expect, it } from "vitest";
-import { OracleConnection } from "../../dialect/connection";
+import { afterEach, describe, expect, expectTypeOf, it } from "vitest";
+import { OracleConnection, OracleQueryResult } from "../../dialect/connection";
 import { OracleLog } from "../../dialect/logger";
 
 describe("OracleConnection", () => {
@@ -75,5 +75,13 @@ describe("OracleConnection", () => {
             expect(await connection.formatReturningValue(lob)).toBe(lob);
             expect(await connection.formatReturningValue("Notes")).toBe("Notes");
         });
+    });
+});
+
+describe("OracleQueryResult", () => {
+    it("should type rows and out binds separately", () => {
+        expectTypeOf<OracleQueryResult<{ ID: number }, [string]>["rows"]>().toEqualTypeOf<{ ID: number }[]>();
+        expectTypeOf<OracleQueryResult<{ ID: number }, [string]>["outBinds"]>().toEqualTypeOf<[string] | undefined>();
+        expectTypeOf<OracleQueryResult<{ ID: number }>["outBinds"]>().toEqualTypeOf<unknown>();
     });
 });
