@@ -1,7 +1,7 @@
 import { DialectAdapterBase, Kysely } from "kysely";
 
 export class OracleAdapter extends DialectAdapterBase {
-    #supportsReturning = false;
+    #supportsReturning = true;
     #supportsTransactionalDdl = false;
 
     override get supportsReturning(): boolean {

@@ -7,12 +7,22 @@ import {
     DropColumnNode,
     DropConstraintNode,
     FetchNode,
+    IdentifierNode,
+    InsertQueryNode,
+    MergeQueryNode,
     ModifyColumnNode,
     OffsetNode,
+    OperationNode,
     QueryId,
+    ReferenceNode,
+    ReturningNode,
     RootOperationNode,
+    SelectAllNode,
+    SelectionNode,
+    ValuesNode,
 } from "kysely";
-import { ExecuteOptions } from "oracledb";
+import oracledb, { ExecuteOptions } from "oracledb";
+import { ReturningBinds } from "../plugins/with-returning.js";
 
 export interface CompilerOptions {
     /**
@@ -25,14 +35,23 @@ export interface CompilerOptions {
 
 export type OracleNode = RootOperationNode & {
     executeOptions?: ExecuteOptions;
+    returningBinds?: ReturningBinds;
 };
 
 export interface OracleCompiledQuery extends CompiledQuery {
     executeOptions?: ExecuteOptions;
+    returningColumns?: string[];
+}
+
+interface ReturningColumn {
+    name: string;
+    expression: OperationNode;
 }
 
 export class OracleQueryCompiler extends DefaultQueryCompiler {
     #useNonQuotedIdentifiers: boolean;
+    #returningBinds?: ReturningBinds;
+    #returningColumns?: string[];
 
     constructor(compilerOptions?: CompilerOptions) {
         super();
@@ -129,13 +148,122 @@ export class OracleQueryCompiler extends DefaultQueryCompiler {
         super.visitDropConstraint(node);
     }
 
-    compileQuery(node: RootOperationNode, queryId: QueryId): OracleCompiledQuery {
-        const compiledQuery = super.compileQuery(node, queryId) as OracleCompiledQuery;
-        if ((node as OracleNode).executeOptions) {
+    protected override visitReturning(node: ReturningNode): void {
+        const columns = node.selections.map((selection) => this.#getReturningColumn(selection));
+
+        this.append("returning ");
+        columns.forEach(({ expression }, index) => {
+            if (index > 0) {
+                this.append(", ");
+            }
+            this.visitNode(expression);
+        });
+
+        this.append(" into ");
+        columns.forEach(({ name }, index) => {
+            if (index > 0) {
+                this.append(", ");
+            }
+            this.appendValue({ dir: oracledb.BIND_OUT, ...this.#getReturningBind(name) });
+        });
+
+        this.#returningColumns = columns.map(({ name }) => name);
+    }
+
+    protected override visitInsertQuery(node: InsertQueryNode): void {
+        if (node.returning && !(node.values && ValuesNode.is(node.values) && node.values.values.length === 1)) {
+            throw new Error("Insert with `returning` only supports a single row of values in Oracle.");
+        }
+
+        super.visitInsertQuery(node);
+    }
+
+    protected override visitMergeQuery(node: MergeQueryNode): void {
+        if (node.returning) {
+            throw new Error("Merge with `returning` is not supported by Oracle.");
+        }
+
+        super.visitMergeQuery(node);
+    }
+
+    #getReturningColumn(node: SelectionNode): ReturningColumn {
+        const selection = node.selection;
+
+        if (AliasNode.is(selection) && IdentifierNode.is(selection.alias)) {
+            return { name: selection.alias.name, expression: selection.node };
+        }
+
+        if (
+            SelectAllNode.is(selection) ||
+            (ReferenceNode.is(selection) &&
+                (SelectAllNode.is(selection.column) || selection.column.column.name === "*"))
+        ) {
+            throw new Error("Returning all columns is not supported by Oracle. List the columns to return.");
+        }
+
+        if (ReferenceNode.is(selection) && !SelectAllNode.is(selection.column)) {
+            const name = selection.column.column.name;
             return {
-                ...compiledQuery,
-                executeOptions: (node as OracleNode).executeOptions,
+                name: this.#useNonQuotedIdentifiers ? name.toUpperCase() : name,
+                expression: selection,
             };
+        }
+
+        throw new Error('Returning an expression requires an alias, e.g. `sql<number>`...`.as("name")`.');
+    }
+
+    #getReturningBind(name: string) {
+        const bind = this.#returningBinds?.[name] ?? this.#findLooseReturningBind(name);
+
+        if (bind === undefined) {
+            throw new Error(
+                `Missing bind type for returning column "${name}". Set it with \`withReturning\`, e.g. \`.$call(withReturning({ ${name}: oracledb.NUMBER }))\`.`,
+            );
+        }
+
+        return typeof bind === "object" && "type" in bind ? bind : { type: bind };
+    }
+
+    /**
+     * Matches a key ignoring case and underscores, so camelCase keys such as `createdAt` find the
+     * `CREATED_AT` column after `CamelCasePlugin` has renamed it.
+     */
+    #findLooseReturningBind(name: string) {
+        const normalize = (value: string) => value.replace(/_/g, "").toLowerCase();
+        const matches = Object.entries(this.#returningBinds ?? {}).filter(
+            ([key]) => normalize(key) === normalize(name),
+        );
+
+        if (matches.length > 1) {
+            throw new Error(
+                `Ambiguous bind type for returning column "${name}". It matches ${matches.map(([key]) => `"${key}"`).join(", ")}.`,
+            );
+        }
+
+        return matches[0]?.[1];
+    }
+
+    compileQuery(node: RootOperationNode, queryId: QueryId): OracleCompiledQuery {
+        const { executeOptions, returningBinds } = node as OracleNode;
+
+        this.#returningBinds = returningBinds;
+        this.#returningColumns = undefined;
+
+        let compiledQuery: OracleCompiledQuery;
+        try {
+            compiledQuery = super.compileQuery(node, queryId);
+        } finally {
+            this.#returningBinds = undefined;
+        }
+
+        const returningColumns = this.#returningColumns;
+        this.#returningColumns = undefined;
+
+        if (executeOptions) {
+            compiledQuery = { ...compiledQuery, executeOptions };
+        }
+        if (returningColumns) {
+            compiledQuery = { ...compiledQuery, returningColumns };
         }
         return compiledQuery;
     }

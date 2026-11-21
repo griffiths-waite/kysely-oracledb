@@ -62,10 +62,49 @@ export class OracleConnection implements DatabaseConnection {
         }));
 
         return {
-            rows: result?.rows || [],
+            rows: compiledQuery.returningColumns
+                ? await this.formatReturningRows<R>(compiledQuery.returningColumns, result.outBinds)
+                : result?.rows || [],
             numAffectedRows: result.rowsAffected ? BigInt(result.rowsAffected) : undefined,
             outBinds: result.outBinds,
         };
+    }
+
+    async formatReturningRows<R>(columns: string[], outBinds: unknown): Promise<R[]> {
+        if (!Array.isArray(outBinds) || outBinds.length < columns.length) {
+            throw new Error("Unexpected out binds for `returning ... into`.");
+        }
+
+        const values = outBinds.slice(-columns.length);
+
+        if (!values.every(Array.isArray)) {
+            throw new Error("Unexpected out binds for `returning ... into`.");
+        }
+
+        const rows = (values[0] ?? []).map((_, rowIndex) =>
+            Promise.all(
+                columns.map(async (column, columnIndex) => [
+                    column,
+                    await this.formatReturningValue(values[columnIndex][rowIndex]),
+                ]),
+            ),
+        );
+
+        return (await Promise.all(rows)).map((entries) => Object.fromEntries(entries) as R);
+    }
+
+    /**
+     * Reads LOBs as a string or buffer when `oracledb.fetchAsString` or `oracledb.fetchAsBuffer`
+     * include their type, so returned values match what a query would fetch.
+     */
+    async formatReturningValue(value: unknown) {
+        if (!(value instanceof oracledb.Lob)) {
+            return value;
+        }
+
+        const fetchAs: unknown[] = [...(oracledb.fetchAsString ?? []), ...(oracledb.fetchAsBuffer ?? [])];
+
+        return fetchAs.includes(value.type) ? value.getData() : value;
     }
 
     formatQuery(query: CompiledQuery) {

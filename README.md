@@ -343,6 +343,37 @@ await db
     .execute();
 ```
 
+### `WithReturning`
+
+Oracle returns values from an insert, update or delete with `returning ... into` out binds, and each out bind needs a type. `withReturning` sets the type of each column passed to `returning`, and the rows are returned as normal. Pass it to `$call` after `returning`.
+
+```typescript
+import oracledb from "oracledb";
+import { withReturning } from "kysely-oracledb";
+
+const item = await db
+    .insertInto("ITEMS")
+    .values({ NAME: "New item" })
+    .returning(["ID", "NAME", "CREATED_AT"])
+    .$call(
+        withReturning({
+            ID: oracledb.NUMBER,
+            NAME: { type: oracledb.STRING, maxSize: 255 },
+            CREATED_AT: oracledb.DATE,
+        }),
+    )
+    .executeTakeFirstOrThrow();
+
+// insert into "ITEMS" ("NAME") values (:1) returning "ID", "NAME", "CREATED_AT" into :2, :3, :4
+```
+
+- The keys are the keys of the returned row, including aliases. Every returned column needs a type, and missing or extra keys are type errors.
+- With `CamelCasePlugin`, use the camelCase keys, e.g. `createdAt` for `CREATED_AT`.
+- Expressions need an alias, e.g. ``sql<string>`lower(NAME)`.as("lowerName")``.
+- Strings bound as `oracledb.STRING` are limited to 4000 bytes. Bind larger values as `oracledb.CLOB` or `oracledb.BLOB`. These are returned as a string or `Buffer` when `oracledb.fetchAsString` or `oracledb.fetchAsBuffer` include their type, the same as a query. Otherwise they're returned as a `Lob`.
+- An update or delete returns a row for every affected row.
+- Oracle doesn't support `returning` with `returningAll()`, multi-row inserts, `insert ... select` or `merge`. These throw an error.
+
 ### `CamelCaseOverridesPlugin`
 
 An extension to the `CamelCasePlugin` that accepts overrides for columns who's camelized name can't be converted back safely.
