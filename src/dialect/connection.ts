@@ -63,14 +63,14 @@ export class OracleConnection implements DatabaseConnection {
 
         return {
             rows: compiledQuery.returningColumns
-                ? this.formatReturningRows<R>(compiledQuery.returningColumns, result.outBinds)
+                ? await this.formatReturningRows<R>(compiledQuery.returningColumns, result.outBinds)
                 : result?.rows || [],
             numAffectedRows: result.rowsAffected ? BigInt(result.rowsAffected) : undefined,
             outBinds: result.outBinds,
         };
     }
 
-    formatReturningRows<R>(columns: string[], outBinds: unknown): R[] {
+    async formatReturningRows<R>(columns: string[], outBinds: unknown): Promise<R[]> {
         if (!Array.isArray(outBinds) || outBinds.length < columns.length) {
             throw new Error("Unexpected out binds for `returning ... into`.");
         }
@@ -81,10 +81,30 @@ export class OracleConnection implements DatabaseConnection {
             throw new Error("Unexpected out binds for `returning ... into`.");
         }
 
-        return (values[0] ?? []).map(
-            (_, rowIndex) =>
-                Object.fromEntries(columns.map((column, columnIndex) => [column, values[columnIndex][rowIndex]])) as R,
+        const rows = (values[0] ?? []).map((_, rowIndex) =>
+            Promise.all(
+                columns.map(async (column, columnIndex) => [
+                    column,
+                    await this.formatReturningValue(values[columnIndex][rowIndex]),
+                ]),
+            ),
         );
+
+        return (await Promise.all(rows)).map((entries) => Object.fromEntries(entries) as R);
+    }
+
+    /**
+     * Reads LOBs as a string or buffer when `oracledb.fetchAsString` or `oracledb.fetchAsBuffer`
+     * include their type, so returned values match what a query would fetch.
+     */
+    async formatReturningValue(value: unknown) {
+        if (!(value instanceof oracledb.Lob)) {
+            return value;
+        }
+
+        const fetchAs: unknown[] = [...(oracledb.fetchAsString ?? []), ...(oracledb.fetchAsBuffer ?? [])];
+
+        return fetchAs.includes(value.type) ? value.getData() : value;
     }
 
     formatQuery(query: CompiledQuery) {
