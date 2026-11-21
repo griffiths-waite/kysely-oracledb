@@ -19,4 +19,12 @@ declare module "oracledb" {
         seconds?: number | undefined;
         fseconds?: number | undefined;
     }
+
+    /**
+     * The `Lob` class, which `@types/oracledb` only declares as an interface.
+     */
+    export const Lob: {
+        new (...args: never[]): Lob;
+        prototype: Lob;
+    };
 }
