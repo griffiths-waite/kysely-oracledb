@@ -30,6 +30,24 @@ const out = (type: unknown, maxSize?: number) => ({
     ...(maxSize !== undefined && { maxSize }),
 });
 
+describe("query compiler fetch", () => {
+    const db = createDb();
+
+    it("should compile fetch to rows only", () => {
+        const query = db.selectFrom("ITEMS").selectAll().orderBy("ID").fetch(5).compile();
+
+        expect(query.sql).toBe('select * from "ITEMS" order by "ID" fetch first :1 rows only');
+        expect(query.parameters).toEqual([5]);
+    });
+
+    it("should compile fetch with ties", () => {
+        const query = db.selectFrom("ITEMS").selectAll().orderBy("ID").fetch(5, "with ties").compile();
+
+        expect(query.sql).toBe('select * from "ITEMS" order by "ID" fetch first :1 rows with ties');
+        expect(query.parameters).toEqual([5]);
+    });
+});
+
 describe("query compiler returning", () => {
     const db = createDb();
 

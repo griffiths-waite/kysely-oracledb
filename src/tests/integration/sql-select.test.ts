@@ -95,6 +95,23 @@ describe("select", () => {
         expect(rows).toEqual([{ ID: 1, NAME: "Item1" }]);
     });
 
+    it("should fetch first n rows with ties", async (context) => {
+        await context.db
+            .insertInto("ITEMS")
+            .values([{ NAME: "Item1" }, { NAME: "Item2" }, { NAME: "Item2" }, { NAME: "Item3" }])
+            .executeTakeFirst();
+
+        const rows = await context.db
+            .selectFrom("ITEMS")
+            .select(["ID", "NAME"])
+            .orderBy("NAME")
+            .fetch(2, "with ties")
+            .execute();
+
+        expect(rows).toHaveLength(3);
+        expect(rows.map((row) => row.NAME)).toEqual(["Item1", "Item2", "Item2"]);
+    });
+
     it("should offset rows", async (context) => {
         await context.db
             .insertInto("ITEMS")

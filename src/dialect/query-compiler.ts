@@ -92,7 +92,7 @@ export class OracleQueryCompiler extends DefaultQueryCompiler {
     protected override visitFetch(node: FetchNode): void {
         this.append("fetch first ");
         this.visitNode(node.rowCount);
-        this.append(" rows only");
+        this.append(` rows ${node.modifier}`);
     }
 
     protected override visitAddColumn(node: AddColumnNode): void {
